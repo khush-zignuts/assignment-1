@@ -1,0 +1,35 @@
+
+
+{
+  "api": {
+    "auth": {
+      "signup": {
+        "success": "Konto erfolgreich erstellt",
+        "emailExists": "E-Mail wird bereits verwendet"
+      },
+      "login": {
+        "success": "Anmeldung erfolgreich",
+        "invalidCredentials": "Ungültige E-Mail oder Passwort"
+      },
+      "validation": {
+        "emailRequired": "E-Mail ist erforderlich",
+        "passwordRequired": "Passwort ist erforderlich"
+      }
+    },
+    "categories": {
+      "nameRequired": "Kategoriename ist erforderlich",
+      "alreadyExists": "Kategorie existiert bereits",
+      "addSuccess": "Kategorie erfolgreich hinzugefügt",
+      "notFound": "Kategorie nicht gefunden"
+    },
+    "subcategories": {
+      "allFieldsRequired": "Alle Felder sind erforderlich",
+      "alreadyExists": "Unterkategorie existiert bereits",
+      "addSuccess": "Unterkategorie erfolgreich hinzugefügt"
+    },
+    "errors": {
+      "serverError": "Interner Serverfehler",
+      "unauthorized": "Unbefugter Zugriff"
+    }
+  }
+}
