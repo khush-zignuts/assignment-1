@@ -9,9 +9,17 @@
         "success": "Login successful",
         "invalidCredentials": "Invalid email or password"
       },
+      "logout": {
+        "success": "Logout successful",
+        "invalidCredentials": "Invalid email or password"
+      },
       "validation": {
         "emailRequired": "Email is required",
         "passwordRequired": "Password is required"
+      },
+      "delete"  : {
+        "usernotFound" : "User not found",
+        "successDelete": "User deleted successfully"
       }
     },
     "categories": {

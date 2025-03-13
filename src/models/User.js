@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");// Import DB connection
 const bcrypt = require("bcryptjs");
+const commonFields = require("./commonFields");
 
 const User = sequelize.define(
   "User",
@@ -61,6 +62,14 @@ const User = sequelize.define(
         },
       },
     },
+    accessToken: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    ...commonFields, 
+    },
+    {
+      timestamps: true,  
   },
   
 );

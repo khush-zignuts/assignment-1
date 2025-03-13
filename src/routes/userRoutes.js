@@ -1,17 +1,16 @@
 
 const express = require("express");
-const { signup, login } = require("../controllers/userController");
+const { signup, login ,logout  } = require("../controllers/userController");
+const checkUser = require("../middlewares/checkAdmin")
 const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/login", login);
+router.post("/logout", checkUser ,logout);
 
 module.exports = router;
 
-// const express = require("express");
-// const { getDropdownData } = require("../controller/userController");
-// const router = express.Router();
+
 
 // router.get("/dropdown-data", getDropdownData);
 
-// module.exports = router;

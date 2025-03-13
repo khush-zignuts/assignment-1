@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 const Country = require("./Country");
+const commonFields = require("./commonFields");
 
 const City = sequelize.define("City", {
   id: {
@@ -23,7 +24,11 @@ const City = sequelize.define("City", {
   name_de: {
     type: DataTypes.STRING,
     allowNull: false
-  }
+  },
+  ...commonFields, 
+  },
+  {
+    timestamps: true,  
 });
 
 module.exports = City;

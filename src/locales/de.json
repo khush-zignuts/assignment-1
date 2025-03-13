@@ -8,12 +8,20 @@
         "emailExists": "E-Mail wird bereits verwendet"
       },
       "login": {
-        "success": "Anmeldung erfolgreich",
+        "success":"Abmeldung erfolgreich",
+        "invalidCredentials": "Ungültige E-Mail oder Passwort"
+      },
+      "logout": {
+        "success": "Logout successful",
         "invalidCredentials": "Ungültige E-Mail oder Passwort"
       },
       "validation": {
         "emailRequired": "E-Mail ist erforderlich",
         "passwordRequired": "Passwort ist erforderlich"
+      },
+      "delete"  : {
+        "usernotFound" : "Benutzer nicht gefunden",
+        "successDelete": "Benutzer erfolgreich gelöscht"
       }
     },
     "categories": {

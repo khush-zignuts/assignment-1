@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
+const commonFields = require("./commonFields");
 
 const Category = sequelize.define("Category", {
   id: {
@@ -16,7 +17,11 @@ const Category = sequelize.define("Category", {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
-  }
+  },
+  ...commonFields, 
+  },
+  {
+    timestamps: true,  
 });
 
 module.exports = Category;

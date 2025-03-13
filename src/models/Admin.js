@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db");// Import DB connection
-
+const sequelize = require("../config/db");
+const commonFields = require("./commonFields");
 
 const Admin = sequelize.define(
   "Admin",
@@ -25,10 +25,16 @@ const Admin = sequelize.define(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-    }
+    },
+    accessToken: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    ...commonFields,
   },
-  
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = Admin;
-

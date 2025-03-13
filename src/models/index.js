@@ -5,6 +5,7 @@ const Category = require("./Category");
 const Subcategory = require("./Subcategory");
 const Account = require("./Account");
 const Admin = require("./Admin");
+const commonFields = require("./commonFields");
 
 // Relationships
 Country.hasMany(City, { foreignKey: "countryId" });

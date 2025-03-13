@@ -3,6 +3,8 @@ const sequelize = require("../config/db");
 const User = require("./User");
 const Category = require("./Category");
 const Subcategory = require("./Subcategory");
+const commonFields = require("./commonFields");
+
 
 const Account = sequelize.define("Account", {
   id: {
@@ -45,7 +47,13 @@ const Account = sequelize.define("Account", {
   description: {
     type: DataTypes.STRING(100),
     allowNull: true
-  }
+  
+  },
+  ...commonFields, 
+  },
+  {
+    timestamps: true,  
+  
 });
 
 module.exports = Account;
