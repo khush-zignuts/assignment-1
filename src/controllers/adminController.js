@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const { Category, Subcategory } = require("../models");
+const { Op } = require("sequelize");
 
 module.exports = {
   signup: async (req, res) => {
@@ -11,12 +12,13 @@ module.exports = {
       const { name, email, password } = req.body;
       console.log("req.body: ", req.body);
 
-      const existingUser = await Admin.findOne({ where: { email } });
+      // Check if email exists in Admin or User table
+      const existingAdmin = await Admin.findOne({ where: { email } });
+      const existingUser = await User.findOne({ where: { email } });
 
-      if (existingUser)
-        return res
-          .status(400)
-          .json({ message: t("api.auth.signup.emailExists") });
+      if (existingAdmin || existingUser) {
+          return res.status(400).json({ message:  t("api.auth.signup.emailExists")  });
+      }
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
@@ -79,19 +81,19 @@ module.exports = {
     try {
       let { name_en, name_de } = req.body;
 
-      // For using in controller:
-      //get headers from request
-      const lang = req.headers.lang ? req.headers.lang : "en";
+      // // For using in controller:
+      // //get headers from request
+      // const lang = req.headers.lang ? req.headers.lang : "en";
 
-      //initialize localization
-      req.setLocale(lang);
-      // Response
-      return res.status(ResponseCodes.SERVER_ERROR).json({
-        status: ResponseCodes.SERVER_ERROR,
-        data: null,
-        message: req.__("ERROR_UPLOADING_FILE"),
-        error,
-      });
+      // //initialize localization
+      // req.setLocale(lang);
+      // // Response
+      // return res.status(ResponseCodes.SERVER_ERROR).json({
+      //   status: ResponseCodes.SERVER_ERROR,
+      //   data: null,
+      //   message: req.__("ERROR_UPLOADING_FILE"),
+      //   error,
+      // });
 
       // Validate input
       if (!name_en || !name_de) {
@@ -169,4 +171,43 @@ module.exports = {
         .json({ message: t("api.errors.serverError"), error });
     }
   },
+
+  deleteCategory : async (req, res) => {
+    const { t } = req; // Get translation function from middleware
+    try {
+      const { categoryName } = req.body;
+      console.log('req.body: ', req.body);
+
+  
+      // Find category by name (case-insensitive)
+      const category = await Category.findOne({
+        // where: { name: categoryName },
+        where: {
+          [Op.or]: [{ name_en: categoryName }, { name_de: categoryName }],
+        },
+      });
+  
+      if (!category) {
+        return res.status(404).json({ message: t("api.categories.notFound") });
+      }
+      // else{
+      //   return res.status(200).json({ message: "category che"});
+      // }
+  
+      // // Delete all subcategories linked to this category
+      await Subcategory.destroy({ where: { categoryId: category.id } })
+      // .then(
+      //   res.status(200).json({ message: "category dlt"})
+      // );
+  
+      // // Delete the category
+      await Category.destroy({ where: { id: category.id } });
+  
+      return res.status(200).json({ message: t("api.categories.deleted") });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      return res.status(500).json({ message:t("api.errors.serverError"), error });
+    }
+  }
+  
 };

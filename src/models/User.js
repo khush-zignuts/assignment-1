@@ -13,6 +13,12 @@ const User = sequelize.define(
     name: {
       type: DataTypes.STRING(30),
       allowNull: false,
+      validate: {
+        len: {
+          args: [1, 30],
+          msg: "Name must be between 1 and 30 characters long.",
+        },
+      },
     },
     email: {
       type: DataTypes.STRING,
@@ -25,12 +31,18 @@ const User = sequelize.define(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: {
+          len: {
+              args: [8, 16],
+              msg: "Password must be between 8-16 characters.",
+          },
+          // isStrong(value) {
+          //     if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/.test(value)) {
+          //         throw new Error("Password must have at least one uppercase letter, one number, and one special character.");
+          //     }
+          // },
+      },
     },
-    // role: {
-    //   type: DataTypes.ENUM("admin", "user"),
-    //   allowNull: false,
-    //   defaultValue: "user",
-    // },
     country: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -39,20 +51,20 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    // companyName: {
-    //   type: DataTypes.STRING(64),
-    //   allowNull: true,
-    // },
+    companyName: {
+      type: DataTypes.STRING(64),
+      allowNull: true, 
+      validate: {
+        len: {
+          args: [0, 64],
+          msg: "Company name can have a maximum of 64 characters.",
+        },
+      },
+    },
   },
   
 );
 
-module.exports = User;
 
-// {
-//     hooks: {
-//       beforeCreate: async (user) => {
-//         user.password = await bcrypt.hash(user.password, 10);
-//       }
-//     }
-//   }
+module.exports = User;
+ 

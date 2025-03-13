@@ -1,12 +1,13 @@
 const express = require("express");
-const {signup, login ,addCategory , addSubcategory } = require("../controllers/adminController");
-const addcate = require("../controllers/adminController")
+const {signup, login  } = require("../controllers/adminController");
 const router = express.Router();
-const  checkAdmin  = require("../middlewares/checkAdmin"); // Middleware to check admin access 
+const categoryRoutes = require("./categoryRoutes");
 
+//authentication
 router.post("/signup", signup);
 router.post("/login", login);
-router.post("/addCategory" ,checkAdmin, addCategory)
-router.post("/addSubcategory" ,checkAdmin, addSubcategory)
+
+//categories
+router.use("/category", categoryRoutes);
 
 module.exports = router;

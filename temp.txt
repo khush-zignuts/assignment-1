@@ -10,3 +10,6 @@ npx nodemon server.js
 
 
 npm install express sequelize pg pg-hstore bcrypt jsonwebtoken dotenv i18next i18next-fs-backend i18next-http-middleware cors body-parser
+
+
+#Bhavnagar

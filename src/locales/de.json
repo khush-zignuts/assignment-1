@@ -20,7 +20,8 @@
       "nameRequired": "Kategoriename ist erforderlich",
       "alreadyExists": "Kategorie existiert bereits",
       "addSuccess": "Kategorie erfolgreich hinzugefügt",
-      "notFound": "Kategorie nicht gefunden"
+      "notFound": "Kategorie nicht gefunden",
+      "deleted": "Kategorie und Unterkategorien erfolgreich gelöscht"
     },
     "subcategories": {
       "allFieldsRequired": "Alle Felder sind erforderlich",
