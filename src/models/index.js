@@ -1,17 +1,17 @@
 
 const User = require("./user");
-const Admin = require("./admin");
-const MasterCategory = require("./master_category");
-const MasterCategoryTrans = require("./master_category_trans");
-const MasterSubcategory = require("./master_subcategory")
-const MasterSubcategoryTrans = require("./master_subcategory_trans");
-const MasterCountry = require("./master_country");
-const MasterCountryTrans = require("./master_country_trans");
-const MasterAccount = require("./master_account");
+const Admin = require("./Admin");
+const MasterCategory = require("./MasterCategory");
+const MasterCategoryTrans = require("./MasterCategoryTrans");
+const MasterSubcategory = require("./MasterSubcategory")
+const MasterSubcategoryTrans = require("./MasterSubcategoryTrans");
+const MasterCountry = require("./MasterCountry");
+const MasterCountryTrans = require("./MasterCategoryTrans");
+const Account = require("./Account");
 
 // 1. User and MasterAccount (One-to-One)
-User.hasOne(MasterAccount, { foreignKey: "userId", onDelete: "CASCADE" });
-MasterAccount.belongsTo(User, { foreignKey: "userId" });
+User.hasOne(Account, { foreignKey: "userId", onDelete: "CASCADE" });
+Account.belongsTo(User, { foreignKey: "userId" });
 
 // 2. MasterCategory and MasterCategoryTrans (One-to-Many)
 MasterCategory.hasMany(MasterCategoryTrans, {
@@ -59,5 +59,5 @@ module.exports = {
   MasterSubcategoryTrans,
   MasterCountry,
   MasterCountryTrans,
-  MasterAccount,
+  Account,
 };

@@ -7,10 +7,11 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432, 
     dialect: "postgres",
     logging: false, 
     define: {
-      timestamps: true // Automatically add createdAt & updatedAt fields
+      timestamps: false // Automatically add createdAt & updatedAt fields
     } 
   }
 );
@@ -26,12 +27,3 @@ const sequelize = new Sequelize(
 })();
 
 module.exports = sequelize;
-
-
-
-
-
-// sequelize
-//   .authenticate()
-//   .then(() => console.log("Connected to PostgreSQL successfully!"))
-//   .catch((err) => console.error("Database connection error:", err));

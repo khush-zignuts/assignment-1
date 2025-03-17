@@ -1,8 +1,8 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const common_fields = require("./common_fields");
+const CommonField = require("./CommonField");
 
-const admin = sequelize.define(
+const Admin = sequelize.define(
   "Admin",
   {
     id: {
@@ -30,11 +30,9 @@ const admin = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    ...common_fields,
+    ...CommonField,
   },
-  {
-    timestamps: true,
-  }
+  
 );
 
-module.exports = admin;
+module.exports = Admin;

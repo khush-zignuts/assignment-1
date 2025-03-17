@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const { syncDatabase } = require("./src/models/sequel");
+const { syncDatabase } = require("./src/config/sequel");
 const i18nMiddleware = require("./src/config/i18n");
 const authRoutes = require("./src/routes/authRoutes");
 const userRoutes = require("./src/routes/userRoutes");

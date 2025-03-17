@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db"); // Import DB connection
-const common_fields = require("./common_fields");
+const CommonFields = require("./CommonFields");
+const validator = require("validator")
 
 const user = sequelize.define(
   "User",
@@ -38,10 +39,13 @@ const user = sequelize.define(
         },
         isStrong(value) {
           if (
-            !/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,16}$/.test(
-              value
-            )
-          ) {
+            !validator.isStrongPassword(value, {
+              minLength: 8,
+              minUppercase: 1,
+              minNumbers: 1,
+              minSymbols: 1,
+            })
+          ){
             throw new Error(
               "Password must have at least one uppercase letter, one number, and one special character."
             );
@@ -71,11 +75,9 @@ const user = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    ...common_fields,
+    ...CommonFields,
   },
-  {
-    timestamps: true,
-  }
+
 );
 
 module.exports = user;
