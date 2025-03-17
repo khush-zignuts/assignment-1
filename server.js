@@ -2,8 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const { syncDatabase } = require("./src/config/sequel");
 const i18nMiddleware = require("./src/config/i18n");
-const authRoutes = require("./src/routes/authRoutes");
-const userRoutes = require("./src/routes/userRoutes");
+const adminRoutes = require("./src/routes/admin/adminRoutes");
+const userRoutes = require("./src/routes/User/userRoutes");
 
 //app initialization
 
@@ -24,8 +24,8 @@ app.get("/", (req, res) => {
 
 
 //Routes
-app.use("/auth", authRoutes);
-// app.use("/user", userRoutes);
+router.use("/admin", adminRoutes);
+router.use("/user", userRoutes);
 
 // at last port call :
 const PORT = process.env.PORT || 5000;
