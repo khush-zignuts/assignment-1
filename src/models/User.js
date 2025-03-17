@@ -1,10 +1,12 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db"); // Import DB connection
-const CommonFields = require("./CommonFields");
-const validator = require("validator")
+const CommonFields = require("./CommonField");
+const validator = require("validator");
+const MasterCountry = require("./MasterCountry");
+const MasterCity = require("./MasterCity");
 
-const user = sequelize.define(
-  "User",
+const User = sequelize.define(
+  "user",
   {
     id: {
       type: DataTypes.UUID,
@@ -53,13 +55,21 @@ const user = sequelize.define(
         },
       },
     },
-    country: {
-      type: DataTypes.STRING,
+    country_id: {
+      type: DataTypes.UUID,
       allowNull: false,
+      references: {
+        model: MasterCountry,
+        key: "id",
+      },
     },
-    city: {
-      type: DataTypes.STRING,
+    city_id: {
+      type: DataTypes.UUID,
       allowNull: false,
+      references: {
+        model: MasterCity,
+        key: "id",
+      },
     },
     companyName: {
       type: DataTypes.STRING(64),
@@ -80,4 +90,4 @@ const user = sequelize.define(
 
 );
 
-module.exports = user;
+module.exports = User;

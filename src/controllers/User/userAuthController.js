@@ -1,7 +1,7 @@
-const User = require("../models/User");
+const User = require("../../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Admin = require("../models/Admin");
+const Admin = require("../../models/Admin");
 
 module.exports = {
   signup: async (req, res) => {

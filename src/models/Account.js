@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const CommonFields = require("./CommonFields");
-const user = require("./user");
+const CommonFields = require("./CommonField");
+const user = require("./User");
 const MasterCategory = require("./MasterCategory");
 const MasterSubcategory = require("./MasterSubcategory");
 

@@ -1,5 +1,5 @@
 
-const User = require("./user");
+const User = require("./User");
 const Admin = require("./Admin");
 const MasterCategory = require("./MasterCategory");
 const MasterCategoryTrans = require("./MasterCategoryTrans");

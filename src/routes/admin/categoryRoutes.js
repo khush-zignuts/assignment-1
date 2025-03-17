@@ -1,7 +1,7 @@
 const express = require("express");
-const { addCategory , addSubcategory ,deleteCategory} = require("../controllers/adminController");
+const { addCategory , addSubcategory ,deleteCategory} = require("../../controllers/Admin/categoryController");
 const router = express.Router();
-const  checkAdmin  = require("../middlewares/checkAdmin"); // Middleware to check admin access 
+const  checkAdmin  = require("../../middlewares/checkAdmin"); // Middleware to check admin access 
  
 
 

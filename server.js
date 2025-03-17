@@ -24,8 +24,8 @@ app.get("/", (req, res) => {
 
 
 //Routes
-router.use("/admin", adminRoutes);
-router.use("/user", userRoutes);
+app.use("/admin", adminRoutes);
+app.use("/user", userRoutes);
 
 // at last port call :
 const PORT = process.env.PORT || 5000;

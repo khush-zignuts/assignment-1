@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const CommonFields = require("./CommonFields");
+const CommonFields = require("./CommonField");
 
 const MasterCountry = sequelize.define("master_country", {
   id: {

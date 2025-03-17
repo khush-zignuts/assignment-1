@@ -5,6 +5,7 @@ const CommonField = {
   created_at: {
     type: DataTypes.DATE,
     allowNull: true,
+    defaultValue: Sequelize.NOW, 
   },
   created_by: {
     type: DataTypes.UUID,
@@ -29,11 +30,11 @@ const CommonField = {
   deleted_at: {
     type: DataTypes.DATE,
     allowNull: true,
+    
   },
   deleted_by: {
     type: DataTypes.UUID,
     allowNull: true,
-    defaultValue: Sequelize.NOW, 
   },
   
 };
