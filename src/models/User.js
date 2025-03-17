@@ -1,9 +1,8 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db");// Import DB connection
-const bcrypt = require("bcryptjs");
-const commonFields = require("./commonFields");
+const sequelize = require("../config/db"); // Import DB connection
+const common_fields = require("./common_fields");
 
-const User = sequelize.define(
+const user = sequelize.define(
   "User",
   {
     id: {
@@ -33,15 +32,21 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-          len: {
-              args: [8, 16],
-              msg: "Password must be between 8-16 characters.",
-          },
-          // isStrong(value) {
-          //     if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/.test(value)) {
-          //         throw new Error("Password must have at least one uppercase letter, one number, and one special character.");
-          //     }
-          // },
+        len: {
+          args: [8, 16],
+          msg: "Password must be between 8-16 characters.",
+        },
+        isStrong(value) {
+          if (
+            !/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,16}$/.test(
+              value
+            )
+          ) {
+            throw new Error(
+              "Password must have at least one uppercase letter, one number, and one special character."
+            );
+          }
+        },
       },
     },
     country: {
@@ -54,7 +59,7 @@ const User = sequelize.define(
     },
     companyName: {
       type: DataTypes.STRING(64),
-      allowNull: true, 
+      allowNull: true,
       validate: {
         len: {
           args: [0, 64],
@@ -66,14 +71,11 @@ const User = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    ...commonFields, 
-    },
-    {
-      timestamps: true,  
+    ...common_fields,
   },
-  
+  {
+    timestamps: true,
+  }
 );
 
-
-module.exports = User;
- 
+module.exports = user;

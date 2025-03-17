@@ -1,29 +1,63 @@
-const User = require("./User");
-const Country = require("./Country");
-const City = require("./City");
-const Category = require("./Category");
-const Subcategory = require("./Subcategory");
-const Account = require("./Account");
-const Admin = require("./Admin");
-const commonFields = require("./commonFields");
 
-// Relationships
-Country.hasMany(City, { foreignKey: "countryId" });
-City.belongsTo(Country, { foreignKey: "countryId" });
+const User = require("./user");
+const Admin = require("./admin");
+const MasterCategory = require("./master_category");
+const MasterCategoryTrans = require("./master_category_trans");
+const MasterSubcategory = require("./master_subcategory")
+const MasterSubcategoryTrans = require("./master_subcategory_trans");
+const MasterCountry = require("./master_country");
+const MasterCountryTrans = require("./master_country_trans");
+const MasterAccount = require("./master_account");
 
-User.belongsTo(Country, { foreignKey: "countryId" });
-User.belongsTo(City, { foreignKey: "cityId" });
+// 1. User and MasterAccount (One-to-One)
+User.hasOne(MasterAccount, { foreignKey: "userId", onDelete: "CASCADE" });
+MasterAccount.belongsTo(User, { foreignKey: "userId" });
 
-Category.hasMany(Subcategory, { foreignKey: "categoryId" });
-Subcategory.belongsTo(Category, { foreignKey: "categoryId" });
+// 2. MasterCategory and MasterCategoryTrans (One-to-Many)
+MasterCategory.hasMany(MasterCategoryTrans, {
+  foreignKey: "master_category_id",
+  onDelete: "CASCADE",
+});
+MasterCategoryTrans.belongsTo(MasterCategory, {
+  foreignKey: "master_category_id",
+});
 
-User.hasMany(Account, { foreignKey: "userId" });
-Account.belongsTo(User, { foreignKey: "userId" });
+// 3. MasterCategory and MasterSubcategory (One-to-Many)
+MasterCategory.hasMany(MasterSubcategory, {
+  foreignKey: "categoryId",
+  onDelete: "CASCADE",
+});
+MasterSubcategory.belongsTo(MasterCategory, {
+  foreignKey: "categoryId",
+});
 
-Category.hasMany(Account, { foreignKey: "categoryId" });
-Account.belongsTo(Category, { foreignKey: "categoryId" });
+// 4. MasterSubcategory and MasterSubcategoryTrans (One-to-Many)
+MasterSubcategory.hasMany(MasterSubcategoryTrans, {
+  foreignKey: "master_subcategory_id",
+  onDelete: "CASCADE",
+});
+MasterSubcategoryTrans.belongsTo(MasterSubcategory, {
+  foreignKey: "master_subcategory_id",
+});
 
-Subcategory.hasMany(Account, { foreignKey: "subcategoryId" });
-Account.belongsTo(Subcategory, { foreignKey: "subcategoryId" });
+// 5. MasterCountry and MasterCountryTrans (One-to-Many)
+MasterCountry.hasMany(MasterCountryTrans, {
+  foreignKey: "master_country_id",
+  onDelete: "CASCADE",
+});
+MasterCountryTrans.belongsTo(MasterCountry, {
+  foreignKey: "master_country_id",
+});
 
-module.exports = { User, Country, City, Category, Subcategory, Account , Admin};
+
+module.exports = {
+  User,
+  Admin,
+  MasterCategory,
+  MasterCategoryTrans,
+  MasterSubcategory,
+  MasterSubcategoryTrans,
+  MasterCountry,
+  MasterCountryTrans,
+  MasterAccount,
+};

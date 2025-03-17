@@ -2,33 +2,25 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 const common_fields = require("./common_fields");
 
-const admin = sequelize.define(
-  "Admin",
+const master_category_trans = sequelize.define(
+  "master_category_trans",
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    name: {
-      type: DataTypes.STRING(30),
+    master_category_id: {
+      type: DataTypes.UUID,
       allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true,
+      references: {
+        model: master_category,
+        key: "id",
       },
     },
-    password: {
-      type: DataTypes.STRING,
+    translations: {
+      type: DataTypes.JSONB, // Store both name & lang as JSON
       allowNull: false,
-    },
-    accessToken: {
-      type: DataTypes.TEXT,
-      allowNull: true,
     },
     ...common_fields,
   },
@@ -37,4 +29,4 @@ const admin = sequelize.define(
   }
 );
 
-module.exports = admin;
+module.exports = master_category_trans;

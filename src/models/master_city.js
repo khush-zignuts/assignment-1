@@ -1,9 +1,9 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const Country = require("./Country");
-const commonFields = require("./commonFields");
+const common_fields = require("./common_fields");
+const master_country = require("./master_country");
 
-const City = sequelize.define("City", {
+const master_city = sequelize.define("master_city", {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -13,22 +13,14 @@ const City = sequelize.define("City", {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: Country,
+      model: master_country,
       key: "id"
     }
   },
-  name_en: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  name_de: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  ...commonFields, 
+  ...common_fields, 
   },
   {
     timestamps: true,  
 });
 
-module.exports = City;
+module.exports = master_city ;
