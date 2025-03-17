@@ -15,8 +15,6 @@ const checkAdmin = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     console.log("token: ", token);
 
-    // const token = req.header("Authorization");
-    // token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZmNjlkMTQ5LWFmODktNGNhOC1hZjBjLTBiYjc2YTNkMmE2NiIsImlhdCI6MTc0MTc1NDE2MywiZXhwIjoxNzQxODQwNTYzfQ.kvCRwXYk0Fkzzwu2yyZ9vgLatPMPspYOnJb3KuNbQm4";
 
     if (!token) {
       return res
@@ -25,14 +23,14 @@ const checkAdmin = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    console.log('decoded: ', decoded);
     // req.admin = decoded;
-    console.log("req.admin: ", req.admin);
 
-    const admin = await Admin.findOne({
-      where: { id: decoded.id },
-      attributes: ["id" , "accessedToken"],
-    });
-    console.log("admin: ", admin);
+
+    const admin = await Admin.findOne({where: { id: decoded.id }    });
+      // attributes: ["id" , "accessedToken"],
+
+    console.log('admin: ', admin);
     if (!admin) {
       return res.status(401).json({ message: t("api.errors.unauthorized") });
     }

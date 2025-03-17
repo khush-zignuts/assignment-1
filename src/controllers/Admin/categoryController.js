@@ -1,53 +1,86 @@
 const User = require("../../models/User");
- 
-const { Category, Subcategory } = require("../../models");
+
+const {
+  Category,
+  Subcategory,
+  MasterCategoryTrans,
+  MasterCategory,
+} = require("../../models");
 const { Op } = require("sequelize");
+const { v4: uuidv4 } = require("uuid");
 
 module.exports = {
   addCategory: async (req, res) => {
     const { t } = req; // Get translation function
     try {
-      let { name_en, name_de } = req.body;
+      let categories = req.body;
+      console.log("categories: ", categories);
 
-      // // For using in controller:
-      // //get headers from request
-      // const lang = req.headers.lang ? req.headers.lang : "en";
-
-      // //initialize localization
-      // req.setLocale(lang);
-      // // Response
-      // return res.status(ResponseCodes.SERVER_ERROR).json({
-      //   status: ResponseCodes.SERVER_ERROR,
-      //   data: null,
-      //   message: req.__("ERROR_UPLOADING_FILE"),
-      //   error,
-      // });
-
-      // Validate input
-      if (!name_en || !name_de) {
+      if (!Array.isArray(categories) || categories.length === 0) {
         return res
           .status(400)
-          .json({ message: t("api.categories.nameRequired") });
+          .json({ message: t("api.categories.invalidInput") });
       }
 
-      // Convert to lowercase for case-insensitive uniqueness check
-      const existingCategory = await Category.findOne({
-        where: { name_en: name_en.toLowerCase() },
+      // // Prepare data for bulk insert
+      let categoryData = [] ;
+
+      for (let i = 0; i < categories.length; i++) {
+        const { name, lang } = categories[i];
+
+        if (!name || !lang) {
+          return res
+            .status(400)
+            .json({ message: "Both name and lang are required" });
+        }
+
+        categoryData.push({ name: name.toLowerCase(), lang });
+      }
+
+
+      // Check for existing category
+      const existingCategory = await MasterCategoryTrans.findOne({
+        where: {
+          name: {
+            [Op.in]: categoryData.map((c) => c.name),
+          },
+        },
       });
+
       if (existingCategory) {
-        return res
-          .status(400)
-          .json({ message: t("api.categories.alreadyExists") });
+        return res.status(400).json({ message: "Category already exists" });
       }
 
-      // Create Category
-      const category = await Category.create({
-        name_en: name_en.toLowerCase(),
-        name_de: name_de.toLowerCase(),
+      // Generate UUID for MasterCategory
+      const master_category_id = uuidv4();
+      console.log("master_category_id: ", master_category_id);
+
+      // Create master-category || cat_id put in master category table
+      const category = await MasterCategory.create({
+        id: master_category_id,
       });
-      return res
-        .status(201)
-        .json({ message: t("api.categories.addSuccess"), category });
+
+      // Insert Translations Using `bulkCreate`
+      let category_trans = [];
+      for (let i = 0; i < categoryData.length; i++) {
+        category_trans.push({
+          master_category_id,
+          name: categoryData[i].name,
+          lang: categoryData[i].lang,
+        });
+      }
+      
+      
+      // Create master-category-trans
+      await MasterCategoryTrans.bulkCreate(category_trans);
+
+
+      return res.status(201).json({
+        message: t("api.categories.addSuccess"),
+        // category_trans,
+        master_category_id,
+        // category_trans.id ,
+      });
     } catch (error) {
       console.error(error);
       return res
