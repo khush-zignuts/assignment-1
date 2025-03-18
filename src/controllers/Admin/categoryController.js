@@ -13,7 +13,8 @@ module.exports = {
   addCategory: async (req, res) => {
     const { t } = req; // Get translation function
     try {
-      let categories = req.body;
+      //sir changes
+      let categories = req.body.data;
       console.log("categories: ", categories);
 
       if (!Array.isArray(categories) || categories.length === 0) {
@@ -22,31 +23,48 @@ module.exports = {
           .json({ message: t("api.categories.invalidInput") });
       }
 
-      // // Prepare data for bulk insert
       let categoryData = [];
-
       for (let i = 0; i < categories.length; i++) {
         const { name, lang } = categories[i];
-
         if (!name || !lang) {
           return res
             .status(400)
             .json({ message: "Both name and lang are required" });
         }
-
-        categoryData.push({ name: name.toLowerCase(), lang });
+        // Push each valid translation into our categoryData array
+        categoryData.push({ name, lang });
       }
-
-      // Check for existing category
-      const existingCategory = await MasterCategoryTrans.findOne({
-        where: {
-          name: {
-            [Op.in]: categoryData.map((c) => c.name),
+      console.log("categoryData: ", categoryData);
+      /* 
+      //database stored
+      // [{lang:'en', name: 'xyz'}, {lang: 'ar', name: 'abc'}]
+      // [{lang:'en', name: 'abc', isDeleted: true}, {lang: 'ar', name: 'arabaic',  isDeleted: true}]
+      
+      
+      categoryData= [
+        { name : abc , lang : en}
+        { name : arabaic  ,lang : ar}]
+        
+        name: {
+          [Op.in]: [abc, arabic],
           },
+          
+          //body paylod
+          [{lang:'en', name: 'abc'}, {lang: 'ar', name: 'arabaic'}]
+          */
+
+      //  Check for existing category
+      const existingCategory = await MasterCategoryTrans.findAll({
+        where: {
+          isDeleted: false,
+          [Op.or]: categoryData.map((c) => ({
+            name: c.name,
+            lang: c.lang,
+          })),
         },
       });
 
-      if (existingCategory) {
+      if (existingCategory && existingCategory.length > 0) {
         return res.status(400).json({ message: "Category already exists" });
       }
 
@@ -59,17 +77,21 @@ module.exports = {
         id: master_category_id,
       });
 
-      // Insert Translations Using `bulkCreate`
+      console.log("category: ", category);
+
+      // // Prepare data for bulk insert
       let category_trans = [];
       for (let i = 0; i < categoryData.length; i++) {
+        const { name, lang } = categoryData[i];
+
         category_trans.push({
           master_category_id,
           name: categoryData[i].name,
           lang: categoryData[i].lang,
         });
       }
-
-      // Create master-category-trans
+      console.log("category_trans😇 :", category_trans);
+      //   // Create master-category-trans
       await MasterCategoryTrans.bulkCreate(category_trans);
 
       return res.status(201).json({
@@ -221,38 +243,173 @@ module.exports = {
     }
   },
 
-  searchCategory: async (req, res) => {
+  listingCategory: async (req, res) => {
     const { t } = req; // Get translation function from middleware
     try {
-      const { categoryname } = req.body;
-      console.log("categoryName: ", categoryname);
+      // const { categoryname } = req.query;
+      // console.log("categoryName: ", categoryname);
 
-      if (!categoryname) {
-        return res
-          .status(400)
-          .json({ message: t("api.categories.invalidInput") });
-      }
+      // Get search parameter (if provided) and language from headers
+      const search = req.query.q || "";
+      console.log('search: ', search);
 
-      const category = await MasterCategoryTrans.findOne({
-        where: { name: categoryname },
+      // const categoryname = req.query.categoryname || "";
+      // console.log("categoryname: ", categoryname);
+
+      const lang = req.headers.lang ? req.headers.lang : "en";
+      console.log("lang: ", lang);
+
+      // //initialize localization
+      // req.setLocale(lang);
+      // if (req.i18n && req.i18n.changeLanguage) {
+      //   req.i18n.changeLanguage(lang);
+      // }
+
+      // let { page, size } = req.query;
+
+      // // // Convert query params to numbers and set defaults
+      // page = Number(page) || 1; // Default to page 1
+      // size = Number(size) || 10; // Default page size 10
+
+      // // // Calculate offset
+      // const offset = (page - 1) * size;
+      // const limit = size;
+
+      // // // Query MasterCategoryTrans using search on name and filtering by language and isDeleted flag
+      const categoriesData = await MasterCategoryTrans.findAndCountAll({
+        where: {
+          isDeleted: false,
+          lang,
+          // Use iLike for case-insensitive search on category name
+          name: {
+            [Op.iLike]: `%${search}%`,
+          },
+        },
+        include: [
+          {
+            model: MasterSubcategoryTrans,
+            as: "subcategories", // Make sure your association alias is "subcategories"
+            where: {
+              isDeleted: false,
+              lang,
+            },
+            required: false, // This allows categories with no subcategories to be included
+            attributes: ["id", "name", "isActive"],
+          },
+        ],
+        attributes: ["id", "name", "isActive"],
+        // limit,
+        // offset,
+        order: [["created_at", "DESC"]],
       });
 
-      if (!category) {
-        return res.status(404).json({ message: t("api.categories.notFound") });
-      }
-      console.log("category: ", category);
-
-      const subCategories = await MasterSubcategory.findAll({
-        where: { categoryId: category.master_category_id },
-      });
-
-      return res
-        .status(200)
-        .json({
-          message: t("api.auth.search.success"),
-          category,
-          subCategories,
+      console.log("categoriesData: ", categoriesData);
+      if (!categoriesData || categoriesData.count === 0) {
+        return res.status(404).json({
+          message: t("api.categories.notFound") || "No categories found",
         });
+      }
+
+      // // Format the result as desired
+      // const data = categoriesData.rows.map(category => ({
+      //   id: category.id,
+      //   name: category.name,
+      //   isActive: category.isActive,
+      //   subcategory: category.subcategories.map(sub => ({
+      //     id: sub.id,
+      //     name: sub.name,
+      //     isActive: sub.isActive,
+      //   })),
+      // }));
+      // return res.status(200).json({
+      //   message: t("api.categories.listSuccess") || "Categories listed successfully",
+      //   data,
+      //   totalCategories: categoriesData.count,
+      //   totalPages: Math.ceil(categoriesData.count / size),
+      //   currentPage: page,
+      // });
+
+      // if (!categoryname) {
+      //   return res
+      //     .status(400)
+      //     .json({ message: t("api.categories.invalidInput") });
+      // }
+
+      // const category = await MasterCategoryTrans.findOne({
+      //   where: { name: categoryname , lang},
+      // });
+
+      // if (!category) {
+      //   return res.status(404).json({ message: t("api.categories.notFound") });
+      // }
+      // console.log("category: ", category);
+
+      // const subCategories = await MasterSubcategoryTrans.findAll({
+      //   where: { categoryId: category.id ,lang },
+      // });
+
+      // // Fetching details of all the players participated in the auction
+      // const categoriesData = await MasterCategoryTrans.findAndCountAll({
+      //   include: {
+      //     model: MasterSubcategoryTrans,
+      //     where: { id: category.master_category_id, isDeleted: false },
+      //     attributes: ["id", "name", "description"],
+      //   },
+      //   attributes: ["id", "name", "description"],
+      //   limit,
+      //   offset,
+      // });
+
+      // // If no categories are found, return a not-found response
+      // if (!categoriesData || categoriesData.count === 0) {
+      //   return res.status(404).json({ message: "No categories found" });
+      // }
+      // const data = {
+      //   totalCategories: categoriesData.count,
+      //   totalPages: Math.ceil(categoriesData.count / size),
+      //   currentPage: page,
+      //   categories: categoriesData.rows,
+      // };
+      // return res.status(200).json({
+      //   message: t("api.auth.search.success"),
+      //   // category,
+      //   // subCategories,
+      //   categoriesData,
+      // });
+    } catch (error) {
+      console.error("Error searching category:", error);
+      return res
+        .status(500)
+        .json({ message: t("api.errors.serverError"), error });
+    }
+  },
+
+  listingCategorys: async (req, res) => {
+    const { t } = req; // Get translation function from middleware
+    try {
+         const { categoryname } = req.query;
+        console.log("categoryName: ", categoryname);
+
+        const lang = req.headers.lang ? req.headers.lang : "en";
+        console.log("lang: ", lang);
+
+        const category = await MasterCategoryTrans.findOne({
+            where: { name: categoryname },
+          });
+    
+          if (!category) {
+            return res.status(404).json({ message: t("api.categories.notFound") });
+          }
+          console.log("category: ", category);
+    
+      //     const subCategories = await MasterSubcategoryTrans.findAll({
+      //   where: { categoryId: category.id ,lang },
+      // });
+
+      // console.log("subCategories: ", subCategories);
+
+
+
     } catch (error) {
       console.error("Error searching category:", error);
       return res
@@ -261,3 +418,21 @@ module.exports = {
     }
   },
 };
+
+/*
+data: [{
+  id: '1',
+  "name": "first",
+  "isActive": ,
+  subcategory: [{
+    id: 'sub1',
+    name: '',
+    isActive: ,
+  }, {}]
+}, {
+  id: '2',
+  "name": "second",
+  "isActive": ,
+  suncategory: []
+}]
+*/

@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const { syncDatabase } = require("./src/config/sequel");
 const i18nMiddleware = require("./src/config/i18n");
 const adminRoutes = require("./src/routes/admin/adminRoutes");
 const userRoutes = require("./src/routes/User/userRoutes");
@@ -34,7 +33,6 @@ console.log("PORT: ", PORT);
 app.listen(PORT, async () => {
   // Sync Database and Start Server
   try{
-    await syncDatabase();
     console.log(`Server is running on port ${PORT}`);
   }catch(error){
     console.log(error.message);

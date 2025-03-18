@@ -1,5 +1,5 @@
 const express = require("express");
-const { addCategory , addSubcategory ,deleteCategory , searchCategory} = require("../../controllers/Admin/categoryController");
+const { addCategory , addSubcategory ,deleteCategory , listingCategory} = require("../../controllers/Admin/categoryController");
 const router = express.Router();
 const  checkAdmin  = require("../../middlewares/checkAdmin"); // Middleware to check admin access 
  
@@ -12,7 +12,7 @@ router.post("/addSubcategory" ,checkAdmin, addSubcategory)
 router.post("/deleteCategory" , deleteCategory)
 
 //search Category
-router.post("/searchCategory" , searchCategory)
+router.post("/listingCategory" , listingCategory)
 
 
 module.exports = router;
