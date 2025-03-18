@@ -1,5 +1,3 @@
-
-
 {
   "api": {
     "auth": {
@@ -8,7 +6,7 @@
         "emailExists": "E-Mail wird bereits verwendet"
       },
       "login": {
-        "success":"Abmeldung erfolgreich",
+        "success": "Abmeldung erfolgreich",
         "invalidCredentials": "Ungültige E-Mail oder Passwort"
       },
       "logout": {
@@ -19,9 +17,12 @@
         "emailRequired": "E-Mail ist erforderlich",
         "passwordRequired": "Passwort ist erforderlich"
       },
-      "delete"  : {
-        "usernotFound" : "Benutzer nicht gefunden",
+      "delete": {
+        "usernotFound": "Benutzer nicht gefunden",
         "successDelete": "Benutzer erfolgreich gelöscht"
+      },
+      "search": {
+        "success": "Suche erfolgreich"
       }
     },
     "categories": {
@@ -31,10 +32,23 @@
       "notFound": "Kategorie nicht gefunden",
       "deleted": "Kategorie und Unterkategorien erfolgreich gelöscht"
     },
+
     "subcategories": {
       "allFieldsRequired": "Alle Felder sind erforderlich",
       "alreadyExists": "Unterkategorie existiert bereits",
       "addSuccess": "Unterkategorie erfolgreich hinzugefügt"
+    },
+    "countries": {
+      "nameRequired": "Ländername ist erforderlich",
+      "alreadyExists": "Land existiert bereits",
+      "addSuccess": "Land wurde erfolgreich hinzugefügt",
+      "notFound": "Land nicht gefunden",
+      "deleted": "Land und Unterkategorien wurden erfolgreich gelöscht"
+    },
+    "cities": {
+      "allFieldsRequired": "Alle Felder sind erforderlich",
+      "alreadyExists": "Städte existieren bereits",
+      "addSuccess": "Städte wurden erfolgreich hinzugefügt"
     },
     "errors": {
       "serverError": "Interner Serverfehler",

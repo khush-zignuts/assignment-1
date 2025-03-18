@@ -17,9 +17,12 @@
         "emailRequired": "Email is required",
         "passwordRequired": "Password is required"
       },
-      "delete"  : {
-        "usernotFound" : "User not found",
+      "delete": {
+        "usernotFound": "User not found",
         "successDelete": "User deleted successfully"
+      },
+      "search": {
+        "success": "Search successfully"
       }
     },
     "categories": {
@@ -29,10 +32,23 @@
       "notFound": "Category not found",
       "deleted": "Category and subcategories deleted successfully"
     },
+
     "subcategories": {
       "allFieldsRequired": "All fields are required",
       "alreadyExists": "Subcategory already exists",
       "addSuccess": "Subcategory added successfully"
+    },
+    "countries": {
+      "nameRequired": "country name is required",
+      "alreadyExists": "country already exists",
+      "addSuccess": "country added successfully",
+      "notFound": "country not found",
+      "deleted": "country and subcategories deleted successfully"
+    },
+    "cities": {
+      "allFieldsRequired": "All fields are required",
+      "alreadyExists": "cities already exists",
+      "addSuccess": "cities added successfully"
     },
     "errors": {
       "serverError": "Internal server error",

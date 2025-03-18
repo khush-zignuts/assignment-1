@@ -1,10 +1,10 @@
 const User = require("../../models/User");
 
 const {
-  Category,
-  Subcategory,
   MasterCategoryTrans,
   MasterCategory,
+  MasterSubcategoryTrans,
+  MasterSubcategory,
 } = require("../../models");
 const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
@@ -23,7 +23,7 @@ module.exports = {
       }
 
       // // Prepare data for bulk insert
-      let categoryData = [] ;
+      let categoryData = [];
 
       for (let i = 0; i < categories.length; i++) {
         const { name, lang } = categories[i];
@@ -36,7 +36,6 @@ module.exports = {
 
         categoryData.push({ name: name.toLowerCase(), lang });
       }
-
 
       // Check for existing category
       const existingCategory = await MasterCategoryTrans.findOne({
@@ -69,17 +68,16 @@ module.exports = {
           lang: categoryData[i].lang,
         });
       }
-      
-      
+
       // Create master-category-trans
       await MasterCategoryTrans.bulkCreate(category_trans);
 
-
       return res.status(201).json({
         message: t("api.categories.addSuccess"),
-        // category_trans,
+        // status,
         master_category_id,
-        // category_trans.id ,
+        // data,
+        // error,
       });
     } catch (error) {
       console.error(error);
@@ -91,40 +89,72 @@ module.exports = {
   addSubcategory: async (req, res) => {
     const { t } = req; // Get translation function
     try {
-      let { categoryId, name_en, name_de } = req.body;
-      console.log("req.body: ", req.body);
+      let subCategories = req.body;
+      console.log("subCategories: ", subCategories);
 
-      if (!categoryId || !name_en || !name_de) {
+      if (!Array.isArray(subCategories) || subCategories.length === 0) {
         return res
           .status(400)
-          .json({ message: t("api.subcategories.allFieldsRequired") });
+          .json({ message: t("api.categories.invalidInput") });
       }
 
-      // Check if category exists
-      const category = await Category.findOne({ where: { id: categoryId } });
-      if (!category) {
-        return res.status(404).json({ message: t("api.categories.notFound") });
+      let subCategoryData = [];
+
+      for (let i = 0; i < subCategories.length; i++) {
+        const { categoryId, name, lang } = subCategories[i];
+
+        if (!name || !lang || !categoryId) {
+          return res
+            .status(400)
+            .json({ message: "Both name and lang are required" });
+        }
+
+        subCategoryData.push({ categoryId, name: name.toLowerCase(), lang });
       }
 
-      // Check for uniqueness
-      const existingSubcategory = await Subcategory.findOne({
-        where: { name_en: name_en.toLowerCase(), categoryId },
+      // // Check for existing category
+      const existingSubCategory = await MasterSubcategoryTrans.findOne({
+        where: {
+          name: {
+            [Op.in]: subCategoryData.map((c) => c.name),
+          },
+        },
       });
-      if (existingSubcategory) {
-        return res
-          .status(400)
-          .json({ message: t("api.subcategories.alreadyExists") });
+
+      if (existingSubCategory) {
+        return res.status(400).json({ message: "Category already exists" });
       }
 
-      // // Create Subcategory
-      const subcategory = await Subcategory.create({
-        categoryId,
-        name_en: name_en.toLowerCase(),
-        name_de: name_de.toLowerCase(),
+      // Generate UUID for Subcategory
+      const master_Subcategory_id = uuidv4();
+      console.log("master_Subcategory_id: ", master_Subcategory_id);
+
+      // // Create master-Subcategory || cat_id put in master category table
+      const subCategory = await MasterSubcategory.create({
+        id: master_Subcategory_id,
+        categoryId: subCategoryData[0].categoryId,
       });
-      return res
-        .status(201)
-        .json({ message: t("api.subcategories.addSuccess"), Subcategory });
+
+      console.log("subCategory: ", subCategory);
+
+      // // Insert Translations Using `bulkCreate`
+      let subCategory_trans = [];
+      for (let i = 0; i < subCategoryData.length; i++) {
+        subCategory_trans.push({
+          master_subcategory_id: master_Subcategory_id,
+          name: subCategoryData[i].name,
+          lang: subCategoryData[i].lang,
+        });
+      }
+      console.log("subCategory_trans: ", subCategory_trans);
+
+      // // Create master-category-trans
+      await MasterSubcategoryTrans.bulkCreate(subCategory_trans);
+
+      return res.status(201).json({
+        message: t("api.subcategories.addSuccess"),
+        master_Subcategory_id,
+      });
     } catch (error) {
       console.error(error);
       return res
@@ -138,33 +168,93 @@ module.exports = {
       const { categoryName } = req.body;
       console.log("req.body: ", req.body);
 
-      // Find category by name (case-insensitive)
-      const category = await Category.findOne({
-        // where: { name: categoryName },
-        where: {
-          [Op.or]: [{ name_en: categoryName }, { name_de: categoryName }],
-        },
+      // // Find category by name (case-insensitive)
+      const category = await MasterCategoryTrans.findOne({
+        where: { name: categoryName },
+      });
+      console.log("category: ", category);
+
+      if (!category) {
+        return res.status(404).json({ message: t("api.categories.notFound") });
+      }
+
+      // // Check if category is assigned to any account
+      // const assignedAccounts = await Account.findOne({
+      //   where: { categoryId: category.id },
+      // });
+
+      // if (assignedAccounts) {
+      //   return res
+      //     .status(400)
+      //     .json({ message: t("api.categories.assignedToAccount") });
+      // }
+
+      // //  Check if subcategories are assigned to any account
+      // const subcategories = await Subcategory.findAll({
+      //   where: { categoryId: category.id },
+      // });
+
+      // const subcategoryIds = subcategories.map((sub) => sub.id);
+
+      // const assignedSubcategoryAccounts = await Account.findOne({
+      //   where: { subcategoryId: { [Op.in]: subcategoryIds } },
+      // });
+
+      // if (assignedSubcategoryAccounts) {
+      //   return res
+      //     .status(400)
+      //     .json({ message: t("api.subcategories.assignedToAccount") });
+      // }
+
+      // // Delete all subcategories linked to this category
+      // await Subcategory.destroy({ where: { categoryId: category.id } });
+
+      // // Delete the category
+      // await Category.destroy({ where: { id: category.id } });
+
+      return res.status(200).json({ message: t("api.categories.deleted") });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      return res
+        .status(500)
+        .json({ message: t("api.errors.serverError"), error });
+    }
+  },
+
+  searchCategory: async (req, res) => {
+    const { t } = req; // Get translation function from middleware
+    try {
+      const { categoryname } = req.body;
+      console.log("categoryName: ", categoryname);
+
+      if (!categoryname) {
+        return res
+          .status(400)
+          .json({ message: t("api.categories.invalidInput") });
+      }
+
+      const category = await MasterCategoryTrans.findOne({
+        where: { name: categoryname },
       });
 
       if (!category) {
         return res.status(404).json({ message: t("api.categories.notFound") });
       }
-      // else{
-      //   return res.status(200).json({ message: "category che"});
-      // }
+      console.log("category: ", category);
 
-      // // Delete all subcategories linked to this category
-      await Subcategory.destroy({ where: { categoryId: category.id } });
-      // .then(
-      //   res.status(200).json({ message: "category dlt"})
-      // );
+      const subCategories = await MasterSubcategory.findAll({
+        where: { categoryId: category.master_category_id },
+      });
 
-      // // Delete the category
-      await Category.destroy({ where: { id: category.id } });
-
-      return res.status(200).json({ message: t("api.categories.deleted") });
+      return res
+        .status(200)
+        .json({
+          message: t("api.auth.search.success"),
+          category,
+          subCategories,
+        });
     } catch (error) {
-      console.error("Error deleting category:", error);
+      console.error("Error searching category:", error);
       return res
         .status(500)
         .json({ message: t("api.errors.serverError"), error });

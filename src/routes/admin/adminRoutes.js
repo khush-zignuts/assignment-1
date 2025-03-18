@@ -11,6 +11,6 @@ router.use("/auth", adminAuthRoutes);
 router.use("/category", categoryRoutes);
 
 //countries:
-// router.use("/country", countryRoutes);
+router.use("/country", countryRoutes);
 
 module.exports = router;

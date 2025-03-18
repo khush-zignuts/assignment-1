@@ -13,3 +13,6 @@ npm install express sequelize pg pg-hstore bcrypt jsonwebtoken dotenv i18next i1
 
 
 #Bhavnagar 
+
+
+

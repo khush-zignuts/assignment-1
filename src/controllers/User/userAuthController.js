@@ -7,7 +7,7 @@ module.exports = {
   signup: async (req, res) => {
     const { t } = req; // Get translation function
     try {
-      const { name, email, password, country, city, companyName } = req.body;
+      const { name, email, password, country_id, city_id, companyName } = req.body;
       console.log("req.body: ", req.body);
 
       const existingUser = await User.findOne({ where: { email } });
@@ -26,8 +26,8 @@ module.exports = {
         name,
         email,
         password: hashedPassword,
-        country,
-        city,
+        country_id,
+        city_id,
         companyName,
       });
       // res.status(201).json({ message: t("signup_success"), user: newUser });
