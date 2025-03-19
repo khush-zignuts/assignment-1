@@ -1,0 +1,10 @@
+{
+	"api": {
+		"categories": {
+			"listSuccess": "api.categories.listSuccess"
+		},
+		"errors": {
+			"serverError": "api.errors.serverError"
+		}
+	}
+}

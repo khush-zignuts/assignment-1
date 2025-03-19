@@ -2,11 +2,27 @@ const User = require("../../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Admin = require("../../models/Admin");
+const Validator = require("validatorjs");
+const { STATUS_CODES ,  VALIDATION_RULES,} = require("../../config/constant");
+
+const validateRequest = (data, rules, res) => {
+  const validation = new Validator(data, rules);
+  if (validation.fails()) {
+    res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: validation.errors.all() });
+    return false;
+  }
+  return true;
+}
 
 module.exports = {
   signup: async (req, res) => {
     const { t } = req; // Get translation function
     try {
+
+      if (!validateRequest(req.body, VALIDATION_RULES.USER_SIGNUP, res)) return;
+      
       const { name, email, password, country_id, city_id, companyName } = req.body;
       console.log("req.body: ", req.body);
 
