@@ -1,58 +1,64 @@
 {
-	"api": {
-		"auth": {
-			"signup": {
-				"success": "Account created successfully",
-				"emailExists": "Email already in use"
-			},
-			"login": {
-				"success": "Login successful",
-				"invalidCredentials": "Invalid email or password"
-			},
-			"logout": {
-				"success": "Logout successful",
-				"invalidCredentials": "Invalid email or password"
-			},
-			"validation": {
-				"emailRequired": "Email is required",
-				"passwordRequired": "Password is required"
-			},
-			"delete": {
-				"usernotFound": "User not found",
-				"successDelete": "User deleted successfully"
-			},
-			"search": {
-				"success": "Search successfully"
-			}
-		},
-		"categories": {
-			"nameRequired": "Category name is required",
-			"alreadyExists": "Category already exists",
-			"addSuccess": "Category added successfully",
-			"notFound": "Category not found",
-			"deleted": "Category and subcategories deleted successfully",
-			"listSuccess": "api.categories.listSuccess"
-		},
-		"subcategories": {
-			"allFieldsRequired": "All fields are required",
-			"alreadyExists": "Subcategory already exists",
-			"addSuccess": "Subcategory added successfully"
-		},
-		"countries": {
-			"nameRequired": "country name is required",
-			"alreadyExists": "country already exists",
-			"addSuccess": "country added successfully",
-			"notFound": "country not found",
-			"deleted": "country and subcategories deleted successfully"
-		},
-		"cities": {
-			"allFieldsRequired": "All fields are required",
-			"alreadyExists": "cities already exists",
-			"addSuccess": "cities added successfully"
-		},
-		"errors": {
-			"serverError": "Internal server error",
-			"unauthorized": "Unauthorized access"
-		}
-	}
+  "api": {
+    "auth": {
+      "signup": {
+        "success": "Account created successfully",
+        "emailExists": "Email already in use"
+      },
+      "login": {
+        "success": "Login successful",
+        "invalidCredentials": "Invalid email or password"
+      },
+      "logout": {
+        "success": "Logout successful",
+        "invalidCredentials": "Invalid email or password"
+      },
+      "editUser": {
+        "userNotFound": "User not found.",
+        "profileUpdated": "Profile updated successfully.",
+        "invalidCredentials": "Invalid email or password"
+      },
+      "validation": {
+        "emailRequired": "Email is required",
+        "passwordRequired": "Password is required"
+      },
+      "delete": {
+        "usernotFound": "User not found",
+        "successDelete": "User deleted successfully"
+      },
+      "search": {
+        "success": "Search successfully"
+      }
+    },
+    "categories": {
+      "nameRequired": "Category name is required",
+      "alreadyExists": "Category already exists",
+      "addSuccess": "Category added successfully",
+      "notFound": "Category not found",
+      "deleted": "Category and subcategories deleted successfully",
+      "listSuccess": "api.categories.listSuccess"
+    },
+    "subcategories": {
+      "allFieldsRequired": "All fields are required",
+      "alreadyExists": "Subcategory already exists",
+      "addSuccess": "Subcategory added successfully"
+    },
+    "countries": {
+      "nameRequired": "country name is required",
+      "alreadyExists": "country already exists",
+      "addSuccess": "country added successfully",
+      "notFound": "country not found",
+      "deleted": "country and subcategories deleted successfully"
+    },
+    "cities": {
+      "allFieldsRequired": "All fields are required",
+      "alreadyExists": "cities already exists",
+      "addSuccess": "cities added successfully",
+      "invalidInput": "city name is invalid"
+    },
+    "errors": {
+      "serverError": "Internal server error",
+      "unauthorized": "Unauthorized access"
+    }
+  }
 }

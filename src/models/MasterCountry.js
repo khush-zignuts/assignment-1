@@ -6,10 +6,9 @@ const MasterCountry = sequelize.define("master_country", {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
+    primaryKey: true,
   },
-  ...CommonFields, 
-  },
-  );
+  ...CommonFields,
+});
 
 module.exports = MasterCountry;

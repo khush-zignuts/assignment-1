@@ -48,3 +48,15 @@ app.listen(PORT, async () => {
     console.log(error.message);
   }
 });
+
+// app.listen(PORT, async () => {
+//   try {
+//     // Sync database models
+//     // await sequelize.sync({ alter: true }); // or { force: true } to drop & recreate tables (CAUTION)
+//     console.log("Database synced successfully!");
+
+//     console.log(`Server is running on port ${PORT}`);
+//   } catch (error) {
+//     console.error("Error syncing database:", error.message);
+//   }
+// });

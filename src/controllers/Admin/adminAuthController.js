@@ -3,10 +3,10 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Admin = require("../../models/Admin");
 const Validator = require("validatorjs");
-const { STATUS_CODES ,  VALIDATION_RULES,} = require("../../config/constant");
+const i18n = require("../../config/i18n");
+const { STATUS_CODES, VALIDATION_RULES } = require("../../config/constant");
 
-
- const validateRequest = (data, rules, res) => {
+const validateRequest = (data, rules, res) => {
   const validation = new Validator(data, rules);
   if (validation.fails()) {
     res
@@ -15,20 +15,17 @@ const { STATUS_CODES ,  VALIDATION_RULES,} = require("../../config/constant");
     return false;
   }
   return true;
-}
+};
 module.exports = {
-
-
   signup: async (req, res) => {
-    const { t } = req; // Get translation function
+    // const { t } = req; // Get translation function
     try {
-
-      
       const { name, email, password } = req.body;
-      console.log("req.body: ", req.body);
-      
-      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN_SIGNUP, res)) return;
-      
+      // console.log("req.body: ", req.body);
+
+      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN_SIGNUP, res))
+        return;
+
       // Check if email exists in Admin or User table
       const existingAdmin = await Admin.findOne({ where: { email } });
       const existingUser = await User.findOne({ where: { email } });
@@ -36,7 +33,7 @@ module.exports = {
       if (existingAdmin || existingUser) {
         return res
           .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: t("api.auth.signup.emailExists") });
+          .json({ message: i18n.__("api.auth.signup.emailExists") });
       }
 
       const salt = await bcrypt.genSalt(10);
@@ -47,15 +44,15 @@ module.exports = {
         email,
         password: hashedPassword,
       });
-      // res.status(201).json({ message: t("signup_success"), user: newUser });
+      // res.status(201).json({ message: i18n.__("signup_success"), user: newUser });
       res
         .status(STATUS_CODES.CREATED)
-        .json({ message: t("api.auth.signup.success"), user: newUser });
+        .json({ message: i18n.__("api.auth.signup.success"), user: newUser });
     } catch (error) {
       console.log(error);
       res
         .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: t("api.errors.serverError"), error });
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
 
@@ -69,18 +66,18 @@ module.exports = {
       if (!email || !password) {
         return res.status(STATUS_CODES.BAD_REQUEST).json({
           message:
-            t("api.auth.login.missingFields") ||
+            i18n.__("api.auth.login.missingFields") ||
             "Email and password are required.",
         });
       }
 
       const admin = await Admin.findOne({ where: { email } });
-
+      i18n.__;
       // Check if admin exists
       if (!admin) {
         return res
           .status(STATUS_CODES.UNAUTHORIZED)
-          .json({ message: t("api.auth.login.invalidCredentials") });
+          .json({ message: i18n.__("api.auth.login.invalidCredentials") });
       }
       console.log("admin:", admin.toJSON());
 
@@ -89,7 +86,7 @@ module.exports = {
       if (!isPasswordCorrect) {
         return res
           .status(STATUS_CODES.UNAUTHORIZED)
-          .json({ message: t("api.auth.login.invalidCredentials") });
+          .json({ message: i18n.__("api.auth.login.invalidCredentials") });
       }
       const payload = {
         id: admin.id,
@@ -104,18 +101,18 @@ module.exports = {
       admin.accessToken = token;
       await admin.save(); // ✅ Fixed: Now correctly updating instance
 
-      res.json({ message: t("api.auth.login.success"), token });
+      res.json({ message: i18n.__("api.auth.login.success"), token });
     } catch (error) {
       console.log(error.message);
       res
         .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: t("api.errors.serverError"), error });
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
   deleteUser: async (req, res) => {
     try {
-      const { userId } = req.params; // Get user ID from request param
-      console.log("req.params: ", req.params);
+      const userId = req.params.userId; // Get user ID from request param
+      console.log("userId: ", userId);
 
       // Check if user exists and is not deleted
       const user = await User.findOne({
@@ -128,7 +125,7 @@ module.exports = {
       if (!user) {
         return res
           .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: "api.auth.delete.usernotFound" });
+          .json({ message: i18n.__("api.auth.delete.usernotFound") });
       }
 
       // Delete user token
@@ -142,12 +139,12 @@ module.exports = {
 
       return res
         .status(STATUS_CODES.SUCCESS)
-        .json({ message: "api.auth.delete.successDelete" });
+        .json({ message: i18n.__("api.auth.delete.successDelete") });
     } catch (error) {
       console.error("Error deleting user:", error);
       res
         .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: "api.errors.serverError" });
+        .json({ message: i18n.__("api.errors.serverError") });
     }
   },
 };

@@ -10,10 +10,11 @@ const {
 const { Sequelize, Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const sequelize = require("../../config/db");
+const { STATUS_CODES } = require("../../config/constant");
 
 module.exports = {
   addCategory: async (req, res) => {
-    const { t } = req; // Get translation function
+    // const { t } = req; // Get translation function
     try {
       //sir changes
       let categories = req.body.data;
@@ -22,7 +23,7 @@ module.exports = {
       if (!Array.isArray(categories) || categories.length === 0) {
         return res
           .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: t("api.categories.invalidInput") });
+          .json({ message: i18n.__("api.categories.invalidInput") });
       }
 
       let categoryData = [];
@@ -99,7 +100,7 @@ module.exports = {
       await MasterCategoryTrans.bulkCreate(category_trans);
 
       return res.status(STATUS_CODES.CREATED).json({
-        message: t("api.categories.addSuccess"),
+        message: i18n.__("api.categories.addSuccess"),
         // status,
         master_category_id,
         // data,
@@ -109,19 +110,19 @@ module.exports = {
       console.error(error);
       return res
         .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: t("api.errors.serverError"), error });
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
   addSubcategory: async (req, res) => {
-    const { t } = req; // Get translation function
+    // const { t } = req; // Get translation function
     try {
-      let subCategories = req.body;
+      let subCategories = req.body.data;
       console.log("subCategories: ", subCategories);
 
       if (!Array.isArray(subCategories) || subCategories.length === 0) {
         return res
           .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: t("api.categories.invalidInput") });
+          .json({ message: i18n.__("api.categories.invalidInput") });
       }
 
       let subCategoryData = [];
@@ -178,14 +179,14 @@ module.exports = {
       await MasterSubcategoryTrans.bulkCreate(subCategory_trans);
 
       return res.status(STATUS_CODES.CREATED).json({
-        message: t("api.subcategories.addSuccess"),
+        message: i18n.__("api.subcategories.addSuccess"),
         master_Subcategory_id,
       });
     } catch (error) {
       console.error(error);
       return res
         .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: t("api.errors.serverError"), error });
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
   deleteCategory: async (req, res) => {
@@ -203,7 +204,7 @@ module.exports = {
       if (!category) {
         return res
           .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: t("api.categories.notFound") });
+          .json({ message: i18n.__("api.categories.notFound") });
       }
 
       // // Check if category is assigned to any account
@@ -214,7 +215,7 @@ module.exports = {
       // if (assignedAccounts) {
       //   return res
       //     .status(400)
-      //     .json({ message: t("api.categories.assignedToAccount") });
+      //     .json({ message: i18n.__("api.categories.assignedToAccount") });
       // }
 
       // //  Check if subcategories are assigned to any account
@@ -231,7 +232,7 @@ module.exports = {
       // if (assignedSubcategoryAccounts) {
       //   return res
       //     .status(400)
-      //     .json({ message: t("api.subcategories.assignedToAccount") });
+      //     .json({ message: i18n.__("api.subcategories.assignedToAccount") });
       // }
 
       // // Delete all subcategories linked to this category
@@ -242,12 +243,12 @@ module.exports = {
 
       return res
         .status(STATUS_CODES.SUCCESS)
-        .json({ message: t("api.categories.deleted") });
+        .json({ message: i18n.__("api.categories.deleted") });
     } catch (error) {
       console.error("Error deleting category:", error);
       return res
         .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: t("api.errors.serverError"), error });
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
 
@@ -394,7 +395,7 @@ module.exports = {
 
   //     if (!categoriesData || categoriesData.count === 0) {
   //       return res.status(404).json({
-  //         message: t("api.categories.notFound") || "No categories found",
+  //         message: i18n.__("api.categories.notFound") || "No categories found",
   //       });
   //     }
 
@@ -520,7 +521,7 @@ module.exports = {
   //     // if (!categoryname) {
   //     //   return res
   //     //     .status(400)
-  //     //     .json({ message: t("api.categories.invalidInput") });
+  //     //     .json({ message: i18n.__"api.categories.invalidInput") });
   //     // }
 
   //     // const category = await MasterCategoryTrans.findOne({
@@ -528,7 +529,7 @@ module.exports = {
   //     // });
 
   //     // if (!category) {
-  //     //   return res.status(404).json({ message: t("api.categories.notFound") });
+  //     //   return res.status(404).json({ message: i18n.__("api.categories.notFound") });
   //     // }
   //     // console.log("category: ", category);
 
@@ -559,7 +560,7 @@ module.exports = {
   //     //   categories: categoriesData.rows,
   //     // };
   //     // return res.status(200).json({
-  //     //   message: t("api.auth.search.success"),
+  //     //   message: i18n.__("api.auth.search.success"),
   //     //   // category,
   //     //   // subCategories,
   //     //   categoriesData,
@@ -635,7 +636,7 @@ module.exports = {
 
   //     if (!categoriesData || categoriesData.count === 0) {
   //       return res.status(404).json({
-  //         message: t("api.categories.notFound") || "No categories found",
+  //         message: i18n.__("api.categories.notFound") || "No categories found",
   //       });
   //     }
 
@@ -795,7 +796,7 @@ module.exports = {
   //     const categoriesData = await sequelize.query(rawQuery);
   //     if (!categoriesData || categoriesData.length === 0) {
   //       return res.status(404).json({
-  //         message: t("api.categories.notFound") || "No categories found",
+  //         message: i18n.__("api.categories.notFound") || "No categories found",
   //       });
   //     }
   //     const formattedData = categoriesData.reduce((acc, row) => {
@@ -866,6 +867,203 @@ module.exports = {
   //     });
   //   }
   // },
+
+  listingCategory: async (req, res) => {
+    // const { t } = req; // Get translation function from middleware
+    try {
+      const search = req.query.q;
+      console.log("search: ", search);
+
+      if (search === undefined || search === null || search === "") {
+        try {
+          //if not search then return all categories with subcategories and translations
+          // :large_green_circle: **Raw SQL Query to Fetch Categories, Their Translations, and Subcategories**
+          const rawQuery = `
+      SELECT
+        mc.id AS category_id,
+        mct.name AS category_name,
+        mct.lang AS category_lang,
+        mc."isActive" AS category_active,
+        ms.id AS subcategory_id,
+        mst.name AS subcategory_name,
+        mst.lang AS subcategory_lang,
+        mst."isActive" AS subcategory_active
+          FROM master_categories as mc
+          JOIN master_category_trans as mct ON mc.id = mct.master_category_id
+          LEFT JOIN master_subcategories as ms ON mc.id = ms."categoryId" AND ms."isDeleted" = false
+          LEFT JOIN master_subcategory_trans as mst ON ms.id = mst.master_subcategory_id
+          WHERE mc."isDeleted" = false
+          ORDER BY mc.created_at DESC
+          `;
+          // // Execute the raw query
+          const categoriesData = await sequelize.query(rawQuery, {
+            type: Sequelize.QueryTypes.SELECT,
+          });
+          console.log("Fetched Categories: ", categoriesData);
+          if (!categoriesData || categoriesData.count === 0) {
+            return res.status(404).json({
+              message:
+                i18n.__("api.categories.notFound") || "No categories found",
+            });
+          }
+          const formattedData = categoriesData.reduce((acc, row) => {
+            // Find if the category already exists in the accumulator
+            let category = acc.find((c) => c.id === row.category_id);
+            if (!category) {
+              category = {
+                id: row.category_id,
+                name: [],
+                isActive: row.category_active,
+                subcategories: [],
+              };
+              acc.push(category);
+            }
+            // Add translation only if it's not already included
+            if (row.category_name) {
+              const existsCatName = category.name.some(
+                (t) =>
+                  t.lang === row.category_lang && t.value === row.category_name
+              );
+              if (!existsCatName) {
+                category.name.push({
+                  value: row.category_name,
+                  lang: row.category_lang,
+                });
+              }
+            }
+            // Check if the subcategory already exists in the category's subcategories
+            if (row.subcategory_id) {
+              // Find or create the subcategory object within category.subcategories
+              let subcat = category.subcategories.find(
+                (s) => s.id === row.subcategory_id
+              );
+              if (!subcat) {
+                subcat = {
+                  id: row.subcategory_id,
+                  name: [], // Array of subcategory translations
+                  isActive: row.subcategory_active,
+                };
+                category.subcategories.push(subcat);
+              }
+              if (row.subcategory_name) {
+                const existssubcatName = subcat.name.some(
+                  (t) =>
+                    t.lang === row.subcategory_lang &&
+                    t.value === row.subcategory_name
+                );
+                if (!existssubcatName) {
+                  subcat.name.push({
+                    value: row.subcategory_name,
+                    lang: row.subcategory_lang,
+                  });
+                }
+              }
+            }
+            return acc;
+          }, []);
+          return res.status(200).json({
+            message:
+              i18n.__("api.categories.listSuccess") ||
+              "Categories listed successfully",
+            data: formattedData,
+          });
+        } catch (error) {
+          console.error("Error searching category:", error);
+          return res.status(500).json({
+            message: i18n.__("api.errors.serverError"),
+            error,
+          });
+        }
+      } else {
+        try {
+          const lang = i18n.getLocale() || "en";
+          console.log("lang: ", lang);
+          console.log("Search Query:", `%${search}%`);
+          // :large_green_circle: **Raw SQL Query to Fetch Categories, Their Translations, and Subcategories**
+          const rawQuery = `
+      SELECT
+        mc.id AS category_id,
+        mct.name AS category_name,
+        mct.lang AS category_lang,
+        mc."isActive" AS category_active,
+        ms.id AS subcategory_id,
+        mst.name AS subcategory_name,
+        mst.lang AS subcategory_lang,
+        mst."isActive" AS subcategory_active
+          FROM master_categories as mc
+          JOIN master_category_trans as mct ON mc.id = mct.master_category_id
+          LEFT JOIN master_subcategories as ms ON mc.id = ms."categoryId" AND ms."isDeleted" = false
+          LEFT JOIN master_subcategory_trans as mst ON ms.id = mst.master_subcategory_id
+          WHERE mc."isDeleted" = false
+              AND mct.name ILIKE :searchQuery
+              AND mct.lang = :lang
+              AND mst.lang = :lang
+              ORDER BY mc.created_at DESC
+              `;
+          // LIMIT :limit OFFSET :offset;
+          // // Execute the raw query
+          const categoriesData = await sequelize.query(rawQuery, {
+            replacements: {
+              searchQuery: `%${search}%`,
+              lang,
+              // , limit, offset
+            },
+            type: Sequelize.QueryTypes.SELECT,
+          });
+          console.log("Fetched Categories: ", categoriesData);
+          if (!categoriesData || categoriesData.count === 0) {
+            return res.status(404).json({
+              message:
+                i18n.__("api.categories.notFound") || "No categories found",
+            });
+          }
+          // //simple language wise
+          const formattedData = categoriesData.reduce((acc, row) => {
+            // It checks if this category already exists in acc (accumulator).
+            let category = acc.find((c) => c.id === row.category_id);
+            if (!category) {
+              category = {
+                id: row.category_id,
+                name: row.category_name,
+                isActive: row.category_active,
+                lang: row.category_lang,
+                subcategories: [],
+              };
+              acc.push(category);
+            }
+            if (row.subcategory_id) {
+              category.subcategories.push({
+                id: row.subcategory_id,
+                name: row.subcategory_name,
+                lang: row.subcategory_lang,
+                isActive: row.subcategory_active,
+              });
+            }
+            return acc;
+          }, []);
+          return res.status(200).json({
+            message:
+              i18n.__("api.categories.listSuccess") ||
+              "Categories listed successfully",
+            data: formattedData,
+            // totalCategories: categoriesData.count,
+            // totalPages: Math.ceil(categoriesData.count / size),
+            // currentPage: page,
+          });
+        } catch (error) {
+          console.error("Error searching category:", error);
+          return res
+            .status(500)
+            .json({ message: i18n.__("api.errors.serverError"), error });
+        }
+      }
+    } catch (error) {
+      console.error("Error searching category:", error);
+      return res
+        .status(500)
+        .json({ message: i18n.__("api.errors.serverError"), error });
+    }
+  },
 };
 
 /*

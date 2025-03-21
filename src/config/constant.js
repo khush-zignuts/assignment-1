@@ -23,11 +23,14 @@ module.exports = {
       email: "required|email",
       password:
         "required|min:8|max:16|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,16}$/",
-      companyName: "required|string|min:2|max:64",
+      companyName: "string|min:2|max:64",
     },
     LOGIN: {
       email: "required|email",
       password: "required|string|min:8",
+    },
+    ACCOUNT: {
+      description: "requires | max:64",
     },
   },
 };
