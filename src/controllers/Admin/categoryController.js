@@ -10,7 +10,7 @@ const {
 const { Sequelize, Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const sequelize = require("../../config/db");
-const { STATUS_CODES } = require("../../config/constant");
+const { STATUS_CODES } = require("../../config/constants");
 
 module.exports = {
   addCategory: async (req, res) => {
@@ -252,7 +252,6 @@ module.exports = {
     }
   },
 
-  // listingCategory: async (req, res) => {
   //   // const { t } = req; // Get translation function from middleware
   //   try {
   //     const lang = i18n.getLocale() || "en";
@@ -1083,3 +1082,6 @@ data: [{
   suncategory: []
 }]
 */
+
+
+  // listingCategory: async (req, res) => {
