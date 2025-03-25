@@ -13,25 +13,30 @@ const {
 
 module.exports = {
   addCountry: async (req, res) => {
-    // const { t } = req; // Get translation function
     try {
       //sir changes
       let countries = req.body.data;
       console.log("countries: ", countries);
 
       if (!Array.isArray(countries) || countries.length === 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.countries.invalidInput") });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.countries.invalidInput"),
+          data: null,
+          error: "Both 'name' and 'lang' are required for each country.",
+        });
       }
 
       let countryData = [];
       for (let i = 0; i < countries.length; i++) {
         const { name, lang } = countries[i];
         if (!name || !lang) {
-          return res
-            .status(STATUS_CODES.BAD_REQUEST)
-            .json({ message: "Both name and lang are required" });
+          return res.status(STATUS_CODES.BAD_REQUEST).json({
+            status: STATUS_CODES.BAD_REQUEST,
+            message: "Both name and lang are required",
+            data: null,
+            error: "Missing name or language field in the input.",
+          });
         }
         // Push each valid translation into our categoryData array
         countryData.push({ name, lang });
@@ -51,9 +56,13 @@ module.exports = {
 
       console.log("existingCountry: ", existingCountry);
       if (existingCountry && existingCountry.length > 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: "Country already exists" });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "Country already exists",
+          data: null,
+          error:
+            "One or more countries with the same name and language already exist.",
+        });
       }
 
       //   // Generate UUID for MasterCategory
@@ -85,17 +94,19 @@ module.exports = {
       await MasterCountryTrans.bulkCreate(country_trans);
 
       return res.status(STATUS_CODES.CREATED).json({
+        status: STATUS_CODES.CREATED,
         message: i18n.__("api.countries.addSuccess"),
-        // status,
-        master_country_id,
-        // data,
-        // error,
+        data: { master_country_id },
+        error: null,
       });
     } catch (error) {
       console.error(error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error",
+      });
     }
   },
 
@@ -106,9 +117,12 @@ module.exports = {
 
       // Validate request payload
       if (!Array.isArray(countries) || countries.length === 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.countries.invalidInput") });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.countries.invalidInput"),
+          data: null,
+          error: "Invalid input: an array of country objects is required.",
+        });
       }
 
       let updateData = [];
@@ -117,9 +131,12 @@ module.exports = {
         const { id, name, lang } = countries[i];
 
         if (!id || !name || !lang) {
-          return res
-            .status(STATUS_CODES.BAD_REQUEST)
-            .json({ message: "ID, name, and lang are required" });
+          return res.status(STATUS_CODES.BAD_REQUEST).json({
+            status: STATUS_CODES.BAD_REQUEST,
+            message: "ID, name, and lang are required",
+            data: null,
+            error: "Missing required fields in input.",
+          });
         }
 
         updateData.push({ id, name: name.toLowerCase(), lang });
@@ -136,9 +153,12 @@ module.exports = {
       });
 
       if (!existingCountries || existingCountries.length === 0) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: "Country not found" });
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: "Country not found",
+          data: null,
+          error: "No matching country records found for update.",
+        });
       }
 
       // Check for duplicate country names in the same language
@@ -154,13 +174,13 @@ module.exports = {
       });
 
       if (duplicateCountry) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({
-            message: "A country with the same name and language already exists",
-          });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "A country with the same name and language already exists",
+          data: null,
+          error: "Duplicate country detected in the same language.",
+        });
       }
-
       // Perform the update
       for (let i = 0; i < updateData.length; i++) {
         const { id, name, lang } = updateData[i];
@@ -169,13 +189,19 @@ module.exports = {
       }
 
       return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
         message: i18n.__("api.countries.updateSuccess"),
+        data: updateData,
+        error: null,
       });
     } catch (error) {
       console.error("Error updating country:", error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error",
+      });
     }
   },
   deleteCountry: async (req, res) => {
@@ -185,11 +211,13 @@ module.exports = {
 
       // Validate input
       if (!countryId) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: "Country ID is required" });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "Country ID is required",
+          data: null,
+          error: "Missing country ID in request parameters.",
+        });
       }
-
       // Find country by ID
       const country = await MasterCountry.findOne({
         where: { id: countryId, isDeleted: false },
@@ -198,9 +226,12 @@ module.exports = {
       console.log("Country found:", country);
 
       if (!country) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: "Country not found or already deleted" });
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: "Country not found or already deleted",
+          data: null,
+          error: "No active country record found for deletion.",
+        });
       }
 
       // Check if the country is assigned to any account
@@ -209,11 +240,13 @@ module.exports = {
       });
 
       if (assignedAccounts) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: "Cannot delete. Country is linked to an account" });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "Cannot delete. Country is linked to an account",
+          data: null,
+          error: "Country is currently assigned to an account.",
+        });
       }
-
       // Soft delete the country (recommended approach)
       await MasterCountry.update(
         { isDeleted: true },
@@ -226,14 +259,20 @@ module.exports = {
         { where: { master_country_id: countryId } }
       );
 
-      return res
-        .status(STATUS_CODES.SUCCESS)
-        .json({ message: "Country deleted successfully" });
+      return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
+        message: "Country deleted successfully",
+        data: { countryId },
+        error: null,
+      });
     } catch (error) {
       console.error("Error deleting country:", error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error",
+      });
     }
   },
   listingCountriesWithCities: async (req, res) => {
@@ -276,11 +315,13 @@ module.exports = {
 
       // If no results found
       if (!countriesData || countriesData.length === 0) {
-        return res.status(404).json({
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.countries.notFound") || "No countries found",
+          data: [],
+          error: "No country data found for the given criteria.",
         });
       }
-
       // Format the data
       const formattedData = countriesData.reduce((acc, row) => {
         // Check if country already exists in accumulator
@@ -335,17 +376,21 @@ module.exports = {
         return acc;
       }, []);
 
-      return res.status(200).json({
+      return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
         message:
           i18n.__("api.countries.listSuccess") ||
           "Countries listed successfully",
         data: formattedData,
+        error: null,
       });
     } catch (error) {
       console.error("Error fetching countries with cities:", error);
-      return res.status(500).json({
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        error,
+        data: null,
+        error: error.message || "Internal server error",
       });
     }
   },

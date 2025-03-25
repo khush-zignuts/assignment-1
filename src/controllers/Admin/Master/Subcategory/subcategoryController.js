@@ -9,6 +9,7 @@ const {
   MasterCountry,
   MasterCity,
   MasterCityTrans,
+  MasterSubcategoryTrans,
 } = require("../../../../models");
 
 module.exports = {
@@ -19,9 +20,12 @@ module.exports = {
       console.log("subCategories: ", subCategories);
 
       if (!Array.isArray(subCategories) || subCategories.length === 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.categories.invalidInput") });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.categories.invalidInput"),
+          data: null,
+          error: "Invalid input format or empty data",
+        });
       }
 
       let subCategoryData = [];
@@ -30,11 +34,13 @@ module.exports = {
         const { categoryId, name, lang } = subCategories[i];
 
         if (!name || !lang || !categoryId) {
-          return res
-            .status(STATUS_CODES.BAD_REQUEST)
-            .json({ message: "Both name and lang are required" });
+          return res.status(STATUS_CODES.BAD_REQUEST).json({
+            status: STATUS_CODES.BAD_REQUEST,
+            message: "Category ID, name, and language are required",
+            data: null,
+            error: "Missing required fields",
+          });
         }
-
         subCategoryData.push({ categoryId, name: name.toLowerCase(), lang });
       }
 
@@ -48,7 +54,12 @@ module.exports = {
       });
 
       if (existingSubCategory) {
-        return res.status(400).json({ message: "Category already exists" });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "Subcategory already exists",
+          data: null,
+          error: "Duplicate subcategory name",
+        });
       }
 
       // Generate UUID for Subcategory
@@ -78,14 +89,19 @@ module.exports = {
       await MasterSubcategoryTrans.bulkCreate(subCategory_trans);
 
       return res.status(STATUS_CODES.CREATED).json({
+        status: STATUS_CODES.CREATED,
         message: i18n.__("api.subcategories.addSuccess"),
-        master_Subcategory_id,
+        data: { master_Subcategory_id },
+        error: null,
       });
     } catch (error) {
-      console.error(error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      console.error("Error adding subcategory:", error);
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error",
+      });
     }
   },
 
@@ -96,22 +112,26 @@ module.exports = {
 
       // Validate request payload
       if (!Array.isArray(subcategories) || subcategories.length === 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.subcategories.invalidInput") });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.subcategories.invalidInput"),
+          data: null,
+          error: "Invalid input format or empty data",
+        });
       }
-
       let updateData = [];
 
       for (let i = 0; i < subcategories.length; i++) {
         const { id, name, lang } = subcategories[i];
 
         if (!id || !name || !lang) {
-          return res
-            .status(STATUS_CODES.BAD_REQUEST)
-            .json({ message: "ID, name, and lang are required" });
+          return res.status(STATUS_CODES.BAD_REQUEST).json({
+            status: STATUS_CODES.BAD_REQUEST,
+            message: "ID, name, and language are required",
+            data: null,
+            error: "Missing required fields",
+          });
         }
-
         updateData.push({ id, name: name.toLowerCase(), lang });
       }
 
@@ -126,9 +146,12 @@ module.exports = {
       });
 
       if (!existingSubcategories || existingSubcategories.length === 0) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: "Subcategory not found" });
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: "Subcategory not found",
+          data: null,
+          error: "No matching subcategory found for the given IDs",
+        });
       }
 
       // Check for duplicate subcategory names in the same language
@@ -145,8 +168,11 @@ module.exports = {
 
       if (duplicateSubcategory) {
         return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
           message:
             "A subcategory with the same name and language already exists",
+          data: null,
+          error: "Duplicate subcategory detected",
         });
       }
 
@@ -158,13 +184,19 @@ module.exports = {
       }
 
       return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
         message: i18n.__("api.subcategories.updateSuccess"),
+        data: updateData,
+        error: null,
       });
     } catch (error) {
       console.error("Error updating subcategory:", error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error",
+      });
     }
   },
   deleteSubcategory: async (req, res) => {
@@ -174,9 +206,12 @@ module.exports = {
 
       // Validate input
       if (!subCategoryId) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: "Subcategory ID is required" });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "Subcategory ID is required",
+          data: null,
+          error: "Missing subcategory ID in request",
+        });
       }
 
       // Find subcategory by ID
@@ -187,20 +222,26 @@ module.exports = {
       console.log("subcategory found: ", subcategory);
 
       if (!subcategory) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: i18n.__("api.subcategories.notFound") });
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.subcategories.notFound"),
+          data: null,
+          error: "Subcategory not found or already deleted",
+        });
       }
 
       //   Check if the subcategory is assigned to any account
-      const assignedAccounts = await Account.findOne({
+      const assignedAccount = await Account.findOne({
         where: { subcategoryId: subcategory.id },
       });
 
-      if (assignedAccounts) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.subcategories.assignedToAccount") });
+      if (assignedAccount) {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.subcategories.assignedToAccount"),
+          data: null,
+          error: "Cannot delete subcategory assigned to an account",
+        });
       }
 
       // Soft delete the subcategory (recommended approach)
@@ -209,14 +250,20 @@ module.exports = {
         { where: { id: subCategoryId } }
       );
 
-      return res
-        .status(STATUS_CODES.SUCCESS)
-        .json({ message: i18n.__("api.subcategories.deleted") });
+      return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
+        message: i18n.__("api.subcategories.deleted"),
+        data: { subCategoryId },
+        error: null,
+      });
     } catch (error) {
       console.error("Error deleting subcategory:", error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error",
+      });
     }
   },
 };

@@ -4,7 +4,11 @@ const { STATUS_CODES, VALIDATION_RULES } = require("../../config/constant");
 const { Sequelize, Op } = require("sequelize");
 const sequelize = require("../../../../config/db");
 const { v4: uuidv4 } = require("uuid");
-const { MasterCategory, MasterSubcategory, Account } = require("../../../../models");
+const {
+  MasterCategory,
+  MasterSubcategory,
+  Account,
+} = require("../../../../models");
 const AccountTrans = require("../../../../models/AccountTrans");
 
 const validateRequest = (data, rules, res) => {
@@ -31,24 +35,38 @@ module.exports = {
       // });
       // const user_id = userId;
 
-      // Validate presence of userId
+      // Validate required fields
       if (!usersId) {
-        return res.status(400).json({ message: "User ID is required." });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message:
+            i18n.__("api.accounts.missingUserId") || "User ID is required.",
+          data: null,
+          error: null,
+        });
       }
-
       // // Validate name array
       if (!Array.isArray(name) || name.length === 0) {
-        return res
-          .status(400)
-          .json({ message: "Name array is required and cannot be empty." });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message:
+            i18n.__("api.accounts.missingName") ||
+            "Name array is required and cannot be empty.",
+          data: null,
+          error: null,
+        });
       }
 
       // // Validate each name entry
       for (const i of name) {
         if (!i.value || !i.lang) {
-          return res.status(400).json({
+          return res.status(STATUS_CODES.BAD_REQUEST).json({
+            status: STATUS_CODES.BAD_REQUEST,
             message:
+              i18n.__("api.accounts.invalidNameEntry") ||
               "Each name entry must have both value and lang properties.",
+            data: null,
+            error: null,
           });
         }
       }
@@ -56,15 +74,30 @@ module.exports = {
       // //   // Check if categoryId exists in MasterCategory
       const categoryExists = await MasterCategory.findByPk(categoryId);
       if (!categoryExists) {
-        return res.status(400).json({ message: "Invalid categoryId." });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message:
+            i18n.__("api.accounts.invalidCategoryId") || "Invalid categoryId.",
+          data: null,
+          error: null,
+        });
       }
+
       // console.log("categoryExists: ", categoryExists);
 
       // // Check if subCategoryId exists in MasterSubcategory
       const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
       if (!subCategoryExists) {
-        return res.status(400).json({ message: "Invalid subCategoryId." });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message:
+            i18n.__("api.accounts.invalidSubCategoryId") ||
+            "Invalid subCategoryId.",
+          data: null,
+          error: null,
+        });
       }
+
       // console.log("subCategoryExists: ", subCategoryExists);
 
       //check first according to user id :
@@ -89,12 +122,15 @@ module.exports = {
 
         // If an account with the same name already exists, return an error
         if (existingAccountTrans.length > 0) {
-          return res.status(409).json({
+          return res.status(STATUS_CODES.CONFLICT).json({
+            status: STATUS_CODES.CONFLICT,
             message:
+              i18n.__("api.accounts.duplicateAccountName") ||
               "An account with the same name already exists for this user.",
+            data: null,
+            error: null,
           });
         }
-        console.log("existingAccount: ", existingAccountTrans);
       }
 
       // // Generate UUID for MasterCategory
@@ -138,53 +174,22 @@ module.exports = {
       await AccountTrans.bulkCreate(accountTransData);
 
       return res.status(STATUS_CODES.CREATED).json({
-        // message: i18n.__("api.categories.addSuccess"),
-        message: "account created",
-
-        // status,
-        account_id,
-        // data,
-        // error,
+        status: STATUS_CODES.CREATED,
+        message:
+          i18n.__("api.accounts.addSuccess") || "Account created successfully.",
+        data: { account_id },
+        error: null,
       });
     } catch (error) {
       console.error("Error adding account:", error);
-      return res.status(500).json({ message: "Internal server error." });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError") || "Internal server error.",
+        data: null,
+        error: error.message || "Unexpected error occurred.",
+      });
     }
   },
-
-  // getAccountById: async (req, res) => {
-  //   try {
-  //     const { accountId } = req.params;
-
-  //     // Validate input
-  //     if (!accountId) {
-  //       return res.status(400).json({ message: "Account ID is required." });
-  //     }
-
-  //     // Fetch account details
-  //     const account = await Account.findOne({
-  //       where: { id: accountId },
-  //       include: [
-  //         {
-  //           model: AccountTrans,
-  //           as: "translations", // If you've defined an alias in associations
-  //           attributes: ["id", "Account_id", "name", "lang"],
-  //         },
-  //       ],
-  //     });
-
-  //     // If no account found
-  //     if (!account) {
-  //       return res.status(404).json({ message: "Account not found." });
-  //     }
-
-  //     // Return account details
-  //     return res.status(200).json({ account });
-  //   } catch (error) {
-  //     console.error("Error fetching account:", error);
-  //     return res.status(500).json({ message: "Internal server error." });
-  //   }
-  // },
 
   getAllAccounts: async (req, res) => {
     try {
@@ -213,13 +218,14 @@ module.exports = {
         type: Sequelize.QueryTypes.SELECT,
       });
 
-      if (!accountsData || accountsData.count === 0) {
-        return res.status(404).json({
-          message: i18n.__("api.categories.notFound") || "No categories found",
+      if (!accountsData || accountsData.length === 0) {
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.accounts.notFound") || "No accounts found.",
+          data: null,
+          error: null,
         });
       }
-
-      
 
       console.log("accountsData: ", accountsData);
 
@@ -266,11 +272,57 @@ module.exports = {
       }, []);
       console.log("formattedData", formattedData);
 
-      // Return all accounts
-      return res.status(200).json({ formattedData });
+      // Return formatted accounts
+      return res.status(STATUS_CODES.OK).json({
+        status: STATUS_CODES.OK,
+        message:
+          i18n.__("api.accounts.fetchSuccess") ||
+          "Accounts retrieved successfully.",
+        data: formattedData,
+        error: null,
+      });
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      return res.status(500).json({ message: "Internal server error." });
+      return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        status: STATUS_CODES.INTERNAL_SERVER_ERROR,
+        message: i18n.__("api.errors.serverError") || "Internal server error.",
+        data: null,
+        error: error.message || "Unexpected error occurred.",
+      });
     }
   },
+
+  // getAccountById: async (req, res) => {
+  //   try {
+  //     const { accountId } = req.params;
+
+  //     // Validate input
+  //     if (!accountId) {
+  //       return res.status(400).json({ message: "Account ID is required." });
+  //     }
+
+  //     // Fetch account details
+  //     const account = await Account.findOne({
+  //       where: { id: accountId },
+  //       include: [
+  //         {
+  //           model: AccountTrans,
+  //           as: "translations", // If you've defined an alias in associations
+  //           attributes: ["id", "Account_id", "name", "lang"],
+  //         },
+  //       ],
+  //     });
+
+  //     // If no account found
+  //     if (!account) {
+  //       return res.status(404).json({ message: "Account not found." });
+  //     }
+
+  //     // Return account details
+  //     return res.status(200).json({ account });
+  //   } catch (error) {
+  //     console.error("Error fetching account:", error);
+  //     return res.status(500).json({ message: "Internal server error." });
+  //   }
+  // },
 };

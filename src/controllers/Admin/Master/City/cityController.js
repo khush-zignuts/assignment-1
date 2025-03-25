@@ -19,20 +19,25 @@ module.exports = {
       console.log("cities: ", cities);
 
       if (!Array.isArray(cities) || cities.length === 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.cities.invalidInput") });
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.cities.invalidInput"),
+          data: null,
+          error: null,
+        });
       }
-
       let cityData = [];
 
       for (let i = 0; i < cities.length; i++) {
         const { countryId, name, lang } = cities[i];
 
         if (!name || !lang || !countryId) {
-          return res
-            .status(STATUS_CODES.BAD_REQUEST)
-            .json({ message: "Both name and lang are required" });
+          return res.json({
+            status: STATUS_CODES.BAD_REQUEST,
+            message: "Both name and lang are required",
+            data: null,
+            error: null,
+          });
         }
 
         cityData.push({ countryId, name: name.toLowerCase(), lang });
@@ -51,9 +56,12 @@ module.exports = {
 
       console.log("existingCity: ", existingCity);
       if (existingCity && existingCity.length > 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: "City already exists" });
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "City already exists",
+          data: null,
+          error: null,
+        });
       }
 
       // // Check for existing category
@@ -97,14 +105,20 @@ module.exports = {
       // // // Create master-category-trans
       await MasterCityTrans.bulkCreate(City_trans);
 
-      return res
-        .status(STATUS_CODES.CREATED)
-        .json({ message: i18n.__("api.cities.addSuccess"), master_City_id });
+      return res.json({
+        status: STATUS_CODES.CREATED,
+        message: i18n.__("api.cities.addSuccess"),
+        data: { master_City_id },
+        error: null,
+      });
     } catch (error) {
       console.error(error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 
@@ -115,9 +129,12 @@ module.exports = {
 
       // Validate request payload
       if (!Array.isArray(cities) || cities.length === 0) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.cities.invalidInput") });
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.cities.invalidInput"),
+          data: null,
+          error: null,
+        });
       }
 
       let updateData = [];
@@ -145,9 +162,12 @@ module.exports = {
       });
 
       if (!existingCities || existingCities.length === 0) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: "City not found" });
+        return res.json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: "City not found",
+          data: null,
+          error: null,
+        });
       }
 
       // Check for duplicate city names in the same language
@@ -161,10 +181,12 @@ module.exports = {
           id: { [Op.notIn]: updateData.map((c) => c.id) }, // Ensure it's not checking itself
         },
       });
-
       if (duplicateCity) {
-        return res.status(STATUS_CODES.BAD_REQUEST).json({
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
           message: "A city with the same name and language already exists",
+          data: null,
+          error: null,
         });
       }
 
@@ -175,14 +197,20 @@ module.exports = {
         await MasterCityTrans.update({ name, lang }, { where: { id } });
       }
 
-      return res.status(STATUS_CODES.SUCCESS).json({
+      return res.json({
+        status: STATUS_CODES.SUCCESS,
         message: i18n.__("api.cities.updateSuccess"),
+        data: null,
+        error: null,
       });
     } catch (error) {
       console.error("Error updating city:", error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 
@@ -191,11 +219,13 @@ module.exports = {
       const { cityId } = req.params; // Extract cityId from request params
       console.log("Deleting city:", cityId);
 
-      // Validate input
       if (!cityId) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: "City ID is required" });
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "City ID is required",
+          data: null,
+          error: null,
+        });
       }
 
       // Find city by ID
@@ -206,9 +236,12 @@ module.exports = {
       console.log("City found: ", city);
 
       if (!city) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: i18n.__("api.cities.notFound") });
+        return res.json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.cities.notFound"),
+          data: null,
+          error: null,
+        });
       }
 
       // Check if the city is assigned to any account (if applicable)
@@ -217,25 +250,33 @@ module.exports = {
       });
 
       if (assignedAccounts) {
-        return res
-          .status(STATUS_CODES.BAD_REQUEST)
-          .json({ message: i18n.__("api.cities.assignedToAccount") });
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.cities.assignedToAccount"),
+          data: null,
+          error: null,
+        });
       }
 
-      // Soft delete the city (recommended approach)
       await MasterCityTrans.update(
         { isDeleted: true },
         { where: { id: cityId } }
       );
 
-      return res
-        .status(STATUS_CODES.SUCCESS)
-        .json({ message: i18n.__("api.cities.deleted") });
+      return res.json({
+        status: STATUS_CODES.SUCCESS,
+        message: i18n.__("api.cities.deleted"),
+        data: null,
+        error: null,
+      });
     } catch (error) {
       console.error("Error deleting city:", error);
-      return res
-        .status(STATUS_CODES.SERVER_ERROR)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      return res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 };

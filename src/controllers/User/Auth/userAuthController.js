@@ -33,22 +33,33 @@ module.exports = {
 
       // Validate presence of userId
       if (!usersId) {
-        return res.status(400).json({ message: "User ID is required." });
+        return res.json({
+          status: 400,
+          message: "User ID is required.",
+          data: null,
+          error: "Missing userId in request body.",
+        });
       }
 
-      // // Validate name array
+      // Validate name array
       if (!Array.isArray(name) || name.length === 0) {
-        return res
-          .status(400)
-          .json({ message: "Name array is required and cannot be empty." });
+        return res.json({
+          status: 400,
+          message: "Name array is required and cannot be empty.",
+          data: null,
+          error: "Invalid name format.",
+        });
       }
 
       // // Validate each name entry
       for (const i of name) {
         if (!i.value || !i.lang) {
-          return res.status(400).json({
+          return res.json({
+            status: 400,
             message:
               "Each name entry must have both value and lang properties.",
+            data: null,
+            error: "Invalid name object format.",
           });
         }
       }
@@ -56,14 +67,24 @@ module.exports = {
       // //   // Check if categoryId exists in MasterCategory
       const categoryExists = await MasterCategory.findByPk(categoryId);
       if (!categoryExists) {
-        return res.status(400).json({ message: "Invalid categoryId." });
+        return res.status(400).json({
+          status: 400,
+          message: "Invalid categoryId.",
+          data: null,
+          error: "Category not found.",
+        });
       }
       // console.log("categoryExists: ", categoryExists);
 
       // // Check if subCategoryId exists in MasterSubcategory
       const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
       if (!subCategoryExists) {
-        return res.status(400).json({ message: "Invalid subCategoryId." });
+        return res.json({
+          status: 400,
+          message: "Invalid subCategoryId.",
+          data: null,
+          error: "Subcategory not found.",
+        });
       }
       // console.log("subCategoryExists: ", subCategoryExists);
 
@@ -137,18 +158,20 @@ module.exports = {
 
       await AccountTrans.bulkCreate(accountTransData);
 
-      return res.status(STATUS_CODES.CREATED).json({
-        // message: i18n.__("api.categories.addSuccess"),
-        message: "account created",
-
-        // status,
-        account_id,
-        // data,
-        // error,
+      return res.status(201).json({
+        status: 201,
+        message: "Account created successfully.",
+        data: { account_id },
+        error: null,
       });
     } catch (error) {
       console.error("Error adding account:", error);
-      return res.status(500).json({ message: "Internal server error." });
+      return res.status(500).json({
+        status: 500,
+        message: "Internal server error.",
+        data: null,
+        error: error.message || "An unknown error occurred.",
+      });
     }
   },
   updateAccount: async (req, res) => {
@@ -159,19 +182,32 @@ module.exports = {
 
       // Validate presence of accountId
       if (!accountId) {
-        return res.status(400).json({ message: "Account ID is required." });
+        return res.status(400).json({
+          status: 400,
+          message: "Account ID is required.",
+          data: null,
+          error: "Missing accountId in request.",
+        });
       }
 
       // Validate presence of userId
       if (!usersId) {
-        return res.status(400).json({ message: "User ID is required." });
+        return res.status(400).json({
+          status: 400,
+          message: "User ID is required.",
+          data: null,
+          error: "Missing userId in request body.",
+        });
       }
 
       // Validate name array
       if (!Array.isArray(name) || name.length === 0) {
-        return res
-          .status(400)
-          .json({ message: "Name array is required and cannot be empty." });
+        return res.status(400).json({
+          status: 400,
+          message: "Name array is required and cannot be empty.",
+          data: null,
+          error: "Invalid name format.",
+        });
       }
 
       // Validate each name entry
@@ -190,21 +226,34 @@ module.exports = {
       });
 
       if (!existingAccount) {
-        return res
-          .status(404)
-          .json({ message: "Account not found or unauthorized." });
+        return res.status(404).json({
+          status: 404,
+          message: "Account not found or unauthorized.",
+          data: null,
+          error: "Account does not exist.",
+        });
       }
 
       // Check if categoryId exists in MasterCategory
       const categoryExists = await MasterCategory.findByPk(categoryId);
       if (!categoryExists) {
-        return res.status(400).json({ message: "Invalid categoryId." });
+        return res.status(400).json({
+          status: 400,
+          message: "Invalid categoryId.",
+          data: null,
+          error: "Category not found.",
+        });
       }
 
       // Check if subCategoryId exists in MasterSubcategory
       const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
       if (!subCategoryExists) {
-        return res.status(400).json({ message: "Invalid subCategoryId." });
+        return res.status(400).json({
+          status: 400,
+          message: "Invalid subCategoryId.",
+          data: null,
+          error: "Subcategory not found.",
+        });
       }
 
       // Update account details
@@ -224,10 +273,20 @@ module.exports = {
 
       await AccountTrans.bulkCreate(accountTransData);
 
-      return res.status(200).json({ message: "Account updated successfully." });
+      return res.status(200).json({
+        status: 200,
+        message: "Account updated successfully.",
+        data: { accountId },
+        error: null,
+      });
     } catch (error) {
       console.error("Error updating account:", error);
-      return res.status(500).json({ message: "Internal server error." });
+      return res.status(500).json({
+        status: 500,
+        message: "Internal server error.",
+        data: null,
+        error: error.message || "An unknown error occurred.",
+      });
     }
   },
   deleteAccount: async (req, res) => {
@@ -236,12 +295,14 @@ module.exports = {
       const { usersId } = req.body; // Assuming user ID comes from authenticated request
 
       // Validate input
-      if (!accountId) {
-        return res.status(400).json({ message: "Account ID is required." });
-      }
-
-      if (!usersId) {
-        return res.status(400).json({ message: "User ID is required." });
+      // Validate input
+      if (!accountId || !usersId) {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.accounts.delete.missingFields"),
+          data: null,
+          error: "Missing accountId or usersId in request.",
+        });
       }
 
       // Check if the account exists and belongs to the user
@@ -250,18 +311,31 @@ module.exports = {
       });
 
       if (!account) {
-        return res
-          .status(404)
-          .json({ message: "Account not found or unauthorized." });
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.accounts.delete.notFound"),
+          data: null,
+          error: "Account not found or user not authorized.",
+        });
       }
 
       // Perform soft delete
       await Account.update({ isDeleted: true }, { where: { id: accountId } });
 
-      return res.status(200).json({ message: "Account deleted successfully." });
+      return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
+        message: i18n.__("api.accounts.delete.success"),
+        data: { accountId },
+        error: null,
+      });
     } catch (error) {
       console.error("Error deleting account:", error);
-      return res.status(500).json({ message: "Internal server error." });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error.",
+      });
     }
   },
   // getAccountById: async (req, res) => {
@@ -325,9 +399,13 @@ module.exports = {
         type: Sequelize.QueryTypes.SELECT,
       });
 
-      if (!accountsData || accountsData.count === 0) {
-        return res.status(404).json({
-          message: i18n.__("api.categories.notFound") || "No categories found",
+      // Handle empty data scenario
+      if (!accountsData || accountsData.length === 0) {
+        return res.status(STATUS_CODES.NOT_FOUND).json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.accounts.notFound") || "No accounts found",
+          data: [],
+          error: null,
         });
       }
 
@@ -377,10 +455,22 @@ module.exports = {
       console.log("formattedData", formattedData);
 
       // Return all accounts
-      return res.status(200).json({ formattedData });
+      // Return formatted accounts
+      return res.status(STATUS_CODES.SUCCESS).json({
+        status: STATUS_CODES.SUCCESS,
+        message:
+          i18n.__("api.accounts.found") || "Accounts retrieved successfully",
+        data: formattedData,
+        error: null,
+      });
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      return res.status(500).json({ message: "Internal server error." });
+      return res.status(STATUS_CODES.SERVER_ERROR).json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message || "Internal server error.",
+      });
     }
   },
 };
