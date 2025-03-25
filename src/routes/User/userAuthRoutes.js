@@ -4,7 +4,7 @@ const {
   login,
   logout,
   EditUser,
-} = require("../../controllers/User/userAuthController");
+} = require("../../controllers/User/Auth/UserAuthController");
 const checkUser = require("../../middlewares/checkUser");
 
 const router = express.Router();
@@ -14,7 +14,5 @@ router.post("/login", login);
 router.post("/logout", checkUser, logout);
 
 router.post("/editUser", checkUser, EditUser);
-
-
 
 module.exports = router;

@@ -4,18 +4,24 @@ const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const i18n = require("../../../../config/i18n");
 const { STATUS_CODES } = require("../../config/constant");
-const {
-  MasterCountryTrans,
-  MasterCountry,
-  MasterCity,
-  MasterCityTrans,
-  MasterSubcategoryTrans,
-} = require("../../../../models");
+const { VALIDATION_RULES } = require("../../../../config/validationRules");
+const { MasterSubcategoryTrans } = require("../../../../models");
 
+const Validator = require("validatorjs");
+const validateRequest = (data, rules, res) => {
+  const validation = new Validator(data, rules);
+  if (validation.fails()) {
+    res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: validation.errors.all() });
+    return false;
+  }
+  return true;
+};
 module.exports = {
   addSubcategory: async (req, res) => {
-    // const { t } = req; // Get translation function
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.SUBCATEGORY, res)) return;
       let subCategories = req.body.data;
       console.log("subCategories: ", subCategories);
 
@@ -107,6 +113,7 @@ module.exports = {
 
   updateSubcategory: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.SUBCATEGORY, res)) return;
       let subcategories = req.body.data;
       console.log("Subcategories to update:", subcategories);
 
@@ -201,6 +208,7 @@ module.exports = {
   },
   deleteSubcategory: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.SUBCATEGORY, res)) return;
       const { subCategoryId } = req.params; // Extract subCategoryId from request params
       console.log("Deleting subcategory:", subCategoryId);
 

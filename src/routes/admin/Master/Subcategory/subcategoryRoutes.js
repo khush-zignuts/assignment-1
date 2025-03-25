@@ -3,7 +3,7 @@ const {
   addSubcategory,
   updateSubcategory,
   deleteSubcategory,
-} = require("../../../controllers/Admin/Subcategory/subcategoryController");
+} = require("../../../../controllers/Admin/Master/Subcategory/SubcategoryController");
 const router = express.Router();
 const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
 

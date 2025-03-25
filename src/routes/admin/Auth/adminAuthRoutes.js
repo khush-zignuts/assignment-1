@@ -3,7 +3,7 @@ const {
   signup,
   login,
   deleteUser,
-} = require("../../controllers/Admin/adminAuthController");
+} = require("../../../controllers/Admin/Auth/AdminAuthController");
 const router = express.Router();
 
 //auth User

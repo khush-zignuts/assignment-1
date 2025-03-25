@@ -3,8 +3,7 @@ const {
   addCountry,
   updateCountry,
   deleteCountry,
-  listingCategory,
-} = require("../../../../controllers/Admin/master/Country/countryController");
+} = require("../../../../controllers/Admin/Master/Country/CountryController");
 const router = express.Router();
 const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
 

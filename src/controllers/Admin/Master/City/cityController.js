@@ -4,6 +4,8 @@ const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const i18n = require("../../config/i18n");
 const { STATUS_CODES } = require("../../config/constant");
+const { VALIDATION_RULES } = require("../../../../config/validationRules");
+
 const {
   MasterCountryTrans,
   MasterCountry,
@@ -11,10 +13,22 @@ const {
   MasterCityTrans,
 } = require("../../models");
 
+const Validator = require("validatorjs");
+const validateRequest = (data, rules, res) => {
+  const validation = new Validator(data, rules);
+  if (validation.fails()) {
+    res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: validation.errors.all() });
+    return false;
+  }
+  return true;
+};
+
 module.exports = {
   addCity: async (req, res) => {
-    // const { t } = req; // Get translation function
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.CITY, res)) return;
       let cities = req.body.data;
       console.log("cities: ", cities);
 
@@ -124,6 +138,7 @@ module.exports = {
 
   updateCity: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.CITY, res)) return;
       let cities = req.body.data;
       console.log("Cities to update:", cities);
 
@@ -216,7 +231,9 @@ module.exports = {
 
   deleteCity: async (req, res) => {
     try {
-      const { cityId } = req.params; // Extract cityId from request params
+      if (!validateRequest(req.body, VALIDATION_RULES.CITY, res)) return;
+      const { cityId } = req.params; // Ex
+      // tract cityId from request params
       console.log("Deleting city:", cityId);
 
       if (!cityId) {

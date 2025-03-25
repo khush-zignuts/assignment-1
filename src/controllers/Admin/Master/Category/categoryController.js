@@ -10,12 +10,25 @@ const {
 const { Sequelize, Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const sequelize = require("../../config/db");
-const { STATUS_CODES } = require("../../config/constants");
+const { STATUS_CODES } = require("../../../../config/constants");
+const { VALIDATION_RULES } = require("../../../../config/validationRules");
+
+const Validator = require("validatorjs");
+const validateRequest = (data, rules, res) => {
+  const validation = new Validator(data, rules);
+  if (validation.fails()) {
+    res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: validation.errors.all() });
+    return false;
+  }
+  return true;
+};
 
 module.exports = {
   addCategory: async (req, res) => {
-    // const { t } = req; // Get translation function
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.CATEGORY, res)) return;
       //sir changes
       let categories = req.body.data;
       console.log("categories: ", categories);
@@ -204,6 +217,8 @@ module.exports = {
   // ,
   updateCategory: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.CATEGORY, res)) return;
+
       // const { categoryId } = req.params; // Extract categoryId from request params
       const { categoryId, name, lang } = req.body;
       // console.log("Updating category:", { categoryId, name, lang });
@@ -276,6 +291,8 @@ module.exports = {
   },
   deleteCategory: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.CATEGORY, res)) return;
+
       const { categoryId } = req.params; // Extract categoryId from request params
       console.log("Deleting category:", categoryId);
 
@@ -343,6 +360,8 @@ module.exports = {
   },
   listingCategory: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.CATEGORY, res)) return;
+
       const search = req.query.q;
       console.log("search: ", search);
 

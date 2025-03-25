@@ -4,7 +4,7 @@ const {
   updateCategory,
   deleteCategory,
   listingCategory,
-} = require("../../../../controllers/Admin/master/Category/categoryController");
+} = require("../../../../controllers/Admin/master/Category/CategoryController");
 const router = express.Router();
 const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
 

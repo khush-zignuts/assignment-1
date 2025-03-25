@@ -1,11 +1,12 @@
+const User = require("../../models/User");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const Admin = require("../../models/Admin");
 const Validator = require("validatorjs");
+const { STATUS_CODES } = require("../../../config/constants");
+const { VALIDATION_RULES } = require("../../../config/validationRules");
+
 const i18n = require("../../config/i18n");
-const { STATUS_CODES, VALIDATION_RULES } = require("../../config/constant");
-const { Sequelize, Op } = require("sequelize");
-const sequelize = require("../../config/db");
-const { v4: uuidv4 } = require("uuid");
-const { MasterCategory, MasterSubcategory, Account } = require("../../models");
-const AccountTrans = require("../../models/AccountTrans");
 
 const validateRequest = (data, rules, res) => {
   const validation = new Validator(data, rules);
@@ -17,460 +18,183 @@ const validateRequest = (data, rules, res) => {
   }
   return true;
 };
+
 module.exports = {
-  addAccount: async (req, res) => {
+  signup: async (req, res) => {
+    // const { t } = req; // Get translation function
     try {
-      const { usersId, name, categoryId, subCategoryId, description } =
+      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
+
+      const { name, email, password, country_id, city_id, companyName } =
         req.body;
-      // console.log("first:", {
-      //   userId,
-      //   name,
-      //   categoryId,
-      //   subCategoryId,
-      //   description,
-      // });
-      // const user_id = userId;
+      // console.log("req.body: ", req.body);
 
-      // Validate presence of userId
-      if (!usersId) {
-        return res.json({
-          status: 400,
-          message: "User ID is required.",
-          data: null,
-          error: "Missing userId in request body.",
-        });
+      const existingUser = await User.findOne({ where: { email } });
+      const existingAdmin = await Admin.findOne({ where: { email } });
+
+      if (existingUser || existingAdmin) {
+        return res
+          .status(400)
+          .json({ message: i18n.__("api.auth.signup.emailExists") });
       }
 
-      // Validate name array
-      if (!Array.isArray(name) || name.length === 0) {
-        return res.json({
-          status: 400,
-          message: "Name array is required and cannot be empty.",
-          data: null,
-          error: "Invalid name format.",
-        });
-      }
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-      // // Validate each name entry
-      for (const i of name) {
-        if (!i.value || !i.lang) {
-          return res.json({
-            status: 400,
-            message:
-              "Each name entry must have both value and lang properties.",
-            data: null,
-            error: "Invalid name object format.",
-          });
-        }
-      }
-
-      // //   // Check if categoryId exists in MasterCategory
-      const categoryExists = await MasterCategory.findByPk(categoryId);
-      if (!categoryExists) {
-        return res.status(400).json({
-          status: 400,
-          message: "Invalid categoryId.",
-          data: null,
-          error: "Category not found.",
-        });
-      }
-      // console.log("categoryExists: ", categoryExists);
-
-      // // Check if subCategoryId exists in MasterSubcategory
-      const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
-      if (!subCategoryExists) {
-        return res.json({
-          status: 400,
-          message: "Invalid subCategoryId.",
-          data: null,
-          error: "Subcategory not found.",
-        });
-      }
-      // console.log("subCategoryExists: ", subCategoryExists);
-
-      //check first according to user id :
-      const existingAccount = await Account.findAll({
-        where: { userId: usersId },
+      const newUser = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        country_id,
+        city_id,
+        companyName,
       });
-      // console.log("userId: ", usersId);
-      // console.log("existingAccount: ", existingAccount);
-      // console.log("existingAccount User ID: ", existingAccount[0]?.userId);
-
-      // Check if an account already exists for this user
-      if (existingAccount.length > 0) {
-        // Define `existingAccountTrans` before using it
-        const existingAccountTrans = await AccountTrans.findAll({
-          where: {
-            id: existingAccount[0]?.id, // Use the first found account's userId
-            name: {
-              [Op.or]: name.map((s) => s.value),
-            },
-          },
-        });
-
-        // If an account with the same name already exists, return an error
-        if (existingAccountTrans.length > 0) {
-          return res.status(409).json({
-            message:
-              "An account with the same name already exists for this user.",
-          });
-        }
-        console.log("existingAccount: ", existingAccountTrans);
-      }
-
-      // // Generate UUID for MasterCategory
-      const account_id = uuidv4();
-      console.log("Account_id: ", account_id);
-
-      // // Create new account
-      const newAccount = await Account.create({
-        id: account_id,
-        userId: usersId,
-        categoryId: categoryId,
-        subcategoryId: subCategoryId,
-        description,
-      });
-
-      // console.log("newAccount:", newAccount);
-
-      console.log("done code");
-
-      // // Prepare data for bulk insert into AccountTrans
-
-      // const accountTransData = name.map((entry) => ({
-      //   account_id,
-      //   value: entry.value,
-      //   lang: entry.lang,
-      // }));
-      // // Prepare data for bulk insert
-
-      console.log("name: ", name);
-      let accountTransData = [];
-      for (let i = 0; i < name.length; i++) {
-        const { value, lang } = name[i];
-
-        accountTransData.push({
-          Account_id: account_id,
-          name: name[i].value,
-          lang: name[i].lang,
-        });
-      }
-
-      await AccountTrans.bulkCreate(accountTransData);
-
-      return res.status(201).json({
-        status: 201,
-        message: "Account created successfully.",
-        data: { account_id },
-        error: null,
-      });
+      // res.status(201).json({ message: i18n.__("signup_success"), user: newUser });
+      res
+        .status(201)
+        .json({ message: i18n.__("api.auth.signup.success"), user: newUser });
     } catch (error) {
-      console.error("Error adding account:", error);
-      return res.status(500).json({
-        status: 500,
-        message: "Internal server error.",
-        data: null,
-        error: error.message || "An unknown error occurred.",
-      });
+      console.log(error.message);
+      res
+        .status(500)
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
-  updateAccount: async (req, res) => {
+
+  login: async (req, res) => {
+    // const { t } = req;
     try {
-      const { accountId } = req.params;
-      const { usersId, name, categoryId, subCategoryId, description } =
-        req.body;
-
-      // Validate presence of accountId
-      if (!accountId) {
-        return res.status(400).json({
-          status: 400,
-          message: "Account ID is required.",
-          data: null,
-          error: "Missing accountId in request.",
-        });
-      }
-
-      // Validate presence of userId
-      if (!usersId) {
-        return res.status(400).json({
-          status: 400,
-          message: "User ID is required.",
-          data: null,
-          error: "Missing userId in request body.",
-        });
-      }
-
-      // Validate name array
-      if (!Array.isArray(name) || name.length === 0) {
-        return res.status(400).json({
-          status: 400,
-          message: "Name array is required and cannot be empty.",
-          data: null,
-          error: "Invalid name format.",
-        });
-      }
-
-      // Validate each name entry
-      for (const i of name) {
-        if (!i.value || !i.lang) {
-          return res.status(400).json({
-            message:
-              "Each name entry must have both value and lang properties.",
-          });
-        }
-      }
-
-      // Check if the account exists
-      const existingAccount = await Account.findOne({
-        where: { id: accountId, userId: usersId, isDeleted: false },
-      });
-
-      if (!existingAccount) {
-        return res.status(404).json({
-          status: 404,
-          message: "Account not found or unauthorized.",
-          data: null,
-          error: "Account does not exist.",
-        });
-      }
-
-      // Check if categoryId exists in MasterCategory
-      const categoryExists = await MasterCategory.findByPk(categoryId);
-      if (!categoryExists) {
-        return res.status(400).json({
-          status: 400,
-          message: "Invalid categoryId.",
-          data: null,
-          error: "Category not found.",
-        });
-      }
-
-      // Check if subCategoryId exists in MasterSubcategory
-      const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
-      if (!subCategoryExists) {
-        return res.status(400).json({
-          status: 400,
-          message: "Invalid subCategoryId.",
-          data: null,
-          error: "Subcategory not found.",
-        });
-      }
-
-      // Update account details
-      await Account.update(
-        { categoryId, subcategoryId: subCategoryId, description },
-        { where: { id: accountId } }
-      );
-
-      // Update account translations (delete existing and add new)
-      await AccountTrans.destroy({ where: { Account_id: accountId } });
-
-      const accountTransData = name.map((entry) => ({
-        Account_id: accountId,
-        name: entry.value,
-        lang: entry.lang,
-      }));
-
-      await AccountTrans.bulkCreate(accountTransData);
-
-      return res.status(200).json({
-        status: 200,
-        message: "Account updated successfully.",
-        data: { accountId },
-        error: null,
-      });
-    } catch (error) {
-      console.error("Error updating account:", error);
-      return res.status(500).json({
-        status: 500,
-        message: "Internal server error.",
-        data: null,
-        error: error.message || "An unknown error occurred.",
-      });
-    }
-  },
-  deleteAccount: async (req, res) => {
-    try {
-      const { accountId } = req.params;
-      const { usersId } = req.body; // Assuming user ID comes from authenticated request
+      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
+      const { email, password } = req.body;
+      // console.log(" req.body: ", req.body);
 
       // Validate input
-      // Validate input
-      if (!accountId || !usersId) {
-        return res.status(STATUS_CODES.BAD_REQUEST).json({
-          status: STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.accounts.delete.missingFields"),
-          data: null,
-          error: "Missing accountId or usersId in request.",
+      if (!email || !password) {
+        return res.status(400).json({
+          message:
+            i18n.__("api.auth.login.missingFields") ||
+            "Email and password are required.",
         });
       }
 
-      // Check if the account exists and belongs to the user
-      const account = await Account.findOne({
-        where: { id: accountId, userId: usersId, isDeleted: false },
-      });
+      const user = await User.findOne({ where: { email } });
+      // console.log("user: ", user);
 
-      if (!account) {
-        return res.status(STATUS_CODES.NOT_FOUND).json({
-          status: STATUS_CODES.NOT_FOUND,
-          message: i18n.__("api.accounts.delete.notFound"),
-          data: null,
-          error: "Account not found or user not authorized.",
-        });
+      const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordCorrect) {
+        return res
+          .status(401)
+          .json({ message: i18n.__("api.auth.login.invalidCredentials") });
+        // return res.status(401).json({ message: i18n.__("invalid_credentials") });
       }
 
-      // Perform soft delete
-      await Account.update({ isDeleted: true }, { where: { id: accountId } });
-
-      return res.status(STATUS_CODES.SUCCESS).json({
-        status: STATUS_CODES.SUCCESS,
-        message: i18n.__("api.accounts.delete.success"),
-        data: { accountId },
-        error: null,
+      const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, {
+        expiresIn: "1d",
       });
+
+      user.accessToken = token;
+      await user.save(); // ✅ Fixed: Now correctly updating instance
+
+      res.json({ message: i18n.__("api.auth.login.success"), token });
     } catch (error) {
-      console.error("Error deleting account:", error);
-      return res.status(STATUS_CODES.SERVER_ERROR).json({
-        status: STATUS_CODES.SERVER_ERROR,
-        message: i18n.__("api.errors.serverError"),
-        data: null,
-        error: error.message || "Internal server error.",
-      });
+      console.log(error.message);
+      res
+        .status(500)
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
-  // getAccountById: async (req, res) => {
-  //   try {
-  //     const { accountId } = req.params;
 
-  //     // Validate input
-  //     if (!accountId) {
-  //       return res.status(400).json({ message: "Account ID is required." });
-  //     }
-
-  //     // Fetch account details
-  //     const account = await Account.findOne({
-  //       where: { id: accountId },
-  //       include: [
-  //         {
-  //           model: AccountTrans,
-  //           as: "translations", // If you've defined an alias in associations
-  //           attributes: ["id", "Account_id", "name", "lang"],
-  //         },
-  //       ],
-  //     });
-
-  //     // If no account found
-  //     if (!account) {
-  //       return res.status(404).json({ message: "Account not found." });
-  //     }
-
-  //     // Return account details
-  //     return res.status(200).json({ account });
-  //   } catch (error) {
-  //     console.error("Error fetching account:", error);
-  //     return res.status(500).json({ message: "Internal server error." });
-  //   }
-  // },
-
-  getAllAccounts: async (req, res) => {
+  logout: async (req, res) => {
     try {
-      const rawQuery = `
-      SELECT 
-        ac.id AS id ,
-        ac."userId" AS "userId" ,
-        act.name AS "accountName" ,
-        act.lang AS "accountLang" ,
-        ac."categoryId" AS "categoryId",
-        ac."subcategoryId" AS "subcategoryId"
+      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
+      const { userId } = req.params; // Assuming userId is passed in request body
 
-          FROM  accounts AS ac 
-                  JOIN 
-                account_trans AS act 
-                  ON 
-                ac.id = act."Account_id"
-
-          where ac."isDeleted" = false
-           ORDER BY ac.created_at 
-      
-      `;
-
-      // // Execute the raw query
-      const accountsData = await sequelize.query(rawQuery, {
-        type: Sequelize.QueryTypes.SELECT,
-      });
-
-      // Handle empty data scenario
-      if (!accountsData || accountsData.length === 0) {
-        return res.status(STATUS_CODES.NOT_FOUND).json({
-          status: STATUS_CODES.NOT_FOUND,
-          message: i18n.__("api.accounts.notFound") || "No accounts found",
-          data: [],
-          error: null,
-        });
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ message: i18n.__("api.auth.logout.invalidCredentials") });
       }
 
-      console.log("accountsData: ", accountsData);
+      // Find user by ID
+      const user = await User.findOne({ where: { id: userId } });
 
-      const formattedData = accountsData.reduce((acc, row) => {
-        let account = acc.find((c) => c.id === row.account_id);
-        console.log("account: ", account);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: i18n.__("api.auth.logout.invalidCredentials") });
+      }
+      // Set accessToken to NULL (logout)
+      await User.update({ accessToken: null }, { where: { id: userId } });
 
-        if (!account) {
-          account = {
-            id: row.account_id,
-            userId: row.userId,
-            name: [],
-            category: row.categoryId,
-            subcategories: row.subcategoryId,
-          };
-          console.log("account: ", account);
-          acc.push(account);
-        }
-
-        if (row.accountName) {
-          const existsAccName = account.name.some(
-            (t) => t.lang === row.accountLang && t.value === row.accountName
-          );
-          if (!existsAccName) {
-            account.name.push({
-              value: row.accountName,
-              lang: row.accountLang,
-            });
-          }
-        }
-        // if (row.categoryId) {
-        //   const existscatid = account.name.some(
-        //     (t) => t.lang === row.category_lang && t.value === row.category_name
-        //   );
-        //   if (!existsCatName) {
-        //     category.name.push({
-        //       value: row.category_name,
-        //       lang: row.category_lang,
-        //     });
-        //   }
-        // }
-
-        return acc;
-      }, []);
-      console.log("formattedData", formattedData);
-
-      // Return all accounts
-      // Return formatted accounts
-      return res.status(STATUS_CODES.SUCCESS).json({
-        status: STATUS_CODES.SUCCESS,
-        message:
-          i18n.__("api.accounts.found") || "Accounts retrieved successfully",
-        data: formattedData,
-        error: null,
-      });
+      return res
+        .status(200)
+        .json({ message: i18n.__("api.auth.logout.success") });
     } catch (error) {
-      console.error("Error fetching accounts:", error);
-      return res.status(STATUS_CODES.SERVER_ERROR).json({
-        status: STATUS_CODES.SERVER_ERROR,
-        message: i18n.__("api.errors.serverError"),
-        data: null,
-        error: error.message || "Internal server error.",
+      console.error("Logout error:", error);
+      return res
+        .status(500)
+        .json({ message: i18n.__("api.errors.serverError") });
+    }
+  },
+
+  EditUser: async (req, res) => {
+    try {
+      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
+      const userId = req.user.id; // Assuming user ID is available in req.user
+
+      // Validate input lengths
+      // if (name && name.length > 30) {
+      //   return res.status(400).json({ message: 'Name should not exceed 30 characters.' });
+      // }
+      // if (companyName && companyName.length > 64) {
+      //   return res.status(400).json({ message: 'Company name should not exceed 64 characters.' });
+      // }
+
+      // Find the user by ID
+
+      const user = await User.findOne({
+        where: { id: userId },
+        // attributes: ["id"],
       });
+      if (!user) {
+        return res
+          .status(STATUS_CODES.NOT_FOUND)
+          .json({ message: i18n.__("api.auth.editUser.userNotFound") });
+      }
+
+      const { name, password, country_id, city_id, companyName } = req.body;
+
+      // Check if the user is deleted or inactive
+      if (user.isDeleted) {
+        return res.status(403).json({ message: "User account is deleted." });
+      }
+      if (!user.isActive) {
+        return res.status(403).json({ message: "User account is inactive." });
+      }
+
+      // Update fields
+      if (name) user.name = name;
+      if (country_id) user.country_id = country_id;
+      if (city_id) user.city_id = city_id;
+      if (companyName) user.companyName = companyName;
+
+      // Update password if provided
+      if (password) {
+        user.password = await bcrypt.hash(password, 10);
+      }
+
+      // Save the updated user
+      await user.save();
+
+      res
+        .status(STATUS_CODES.SUCCESS)
+        .json({ message: i18n.__("api.auth.editUser.profileUpdated"), user });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res
+        .status(STATUS_CODES.UNAUTHORIZED)
+        .json({ message: i18n.__("api.errors.serverError"), error });
     }
   },
 };

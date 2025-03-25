@@ -1,10 +1,9 @@
 const express = require("express");
 const {
   addCity,
-  updateCategory,
-  deleteCategory,
-  listingCategory,
-} = require("../../../controllers/Admin/Category/categoryController");
+  updateCity,
+  deleteCity,
+} = require("../../../../controllers/Admin/Master/City/CityController");
 const router = express.Router();
 const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
 

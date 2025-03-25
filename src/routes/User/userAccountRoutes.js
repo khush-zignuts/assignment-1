@@ -2,7 +2,7 @@ const express = require("express");
 const {
   addAccount,
   getAllAccounts,
-} = require("../../controllers/User/userAccountController");
+} = require("../../controllers/User/Master/Account/UserAccountController");
 const checkUser = require("../../middlewares/checkUser");
 
 const router = express.Router();

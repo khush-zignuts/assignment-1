@@ -4,6 +4,7 @@ const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const i18n = require("../../config/i18n");
 const { STATUS_CODES } = require("../../config/constant");
+const { VALIDATION_RULES } = require("../../../../config/validationRules");
 const {
   MasterCountryTrans,
   MasterCountry,
@@ -11,9 +12,21 @@ const {
   MasterCityTrans,
 } = require("../../models");
 
+const Validator = require("validatorjs");
+const validateRequest = (data, rules, res) => {
+  const validation = new Validator(data, rules);
+  if (validation.fails()) {
+    res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: validation.errors.all() });
+    return false;
+  }
+  return true;
+};
 module.exports = {
   addCountry: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.COUNTRY, res)) return;
       //sir changes
       let countries = req.body.data;
       console.log("countries: ", countries);
@@ -112,7 +125,9 @@ module.exports = {
 
   updateCountry: async (req, res) => {
     try {
-      let countries = req.body.data;
+      if (!validateRequest(req.body, VALIDATION_RULES.COUNTRY, res)) return;
+      let countries = req.body;
+
       console.log("Countries to update:", countries);
 
       // Validate request payload
@@ -206,6 +221,7 @@ module.exports = {
   },
   deleteCountry: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.COUNTRY, res)) return;
       const { countryId } = req.params;
       console.log("Deleting country with ID:", countryId);
 
@@ -277,6 +293,7 @@ module.exports = {
   },
   listingCountriesWithCities: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.COUNTRY, res)) return;
       const search = req.query.q; // Search query
       console.log("Search Query:", search);
 

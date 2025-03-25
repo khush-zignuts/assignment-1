@@ -4,7 +4,8 @@ const jwt = require("jsonwebtoken");
 const Admin = require("../../../models/Admin");
 const Validator = require("validatorjs");
 const i18n = require("../../../config/i18n");
-const { STATUS_CODES, VALIDATION_RULES } = require("../../config/constant");
+const { STATUS_CODES } = require("../../../config/constants");
+const { VALIDATION_RULES } = require("../../../config/validationRules");
 
 const validateRequest = (data, rules, res) => {
   const validation = new Validator(data, rules);
@@ -18,8 +19,9 @@ const validateRequest = (data, rules, res) => {
 };
 module.exports = {
   signup: async (req, res) => {
-    // const { t } = req; // Get translation function
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN, res)) return;
+
       const { name, email, password } = req.body;
       // console.log("req.body: ", req.body);
 
@@ -67,6 +69,7 @@ module.exports = {
 
   login: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN, res)) return;
       const { email, password } = req.body;
       console.log(" req.body: ", req.body);
 
@@ -136,6 +139,7 @@ module.exports = {
   },
   deleteUser: async (req, res) => {
     try {
+      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
       const userId = req.params.userId; // Get user ID from request param
       // console.log("userId: ", userId);
 
