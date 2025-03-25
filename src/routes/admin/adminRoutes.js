@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const adminAuthRoutes = require("./adminAuthRoutes");
-const categoryRoutes = require("./categoryRoutes");
-const countryRoutes = require("./countryRoutes");
+const adminAuthRoutes = require("./Auth/adminAuthRoutes");
+const categoryRoutes = require("./Category/categoryRoutes");
+const countryRoutes = require("./Country/countryRoutes");
 
 //authentication
 router.use("/auth", adminAuthRoutes);

@@ -1,11 +1,11 @@
 const Validator = require("validatorjs");
-const i18n = require("../../config/i18n");
+const i18n = require("../../../../config/i18n");
 const { STATUS_CODES, VALIDATION_RULES } = require("../../config/constant");
 const { Sequelize, Op } = require("sequelize");
-const sequelize = require("../../config/db");
+const sequelize = require("../../../../config/db");
 const { v4: uuidv4 } = require("uuid");
-const { MasterCategory, MasterSubcategory, Account } = require("../../models");
-const AccountTrans = require("../../models/AccountTrans");
+const { MasterCategory, MasterSubcategory, Account } = require("../../../../models");
+const AccountTrans = require("../../../../models/AccountTrans");
 
 const validateRequest = (data, rules, res) => {
   const validation = new Validator(data, rules);

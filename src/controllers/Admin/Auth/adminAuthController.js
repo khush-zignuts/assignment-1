@@ -1,9 +1,9 @@
-const User = require("../../models/User");
+const User = require("../../../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Admin = require("../../models/Admin");
+const Admin = require("../../../models/Admin");
 const Validator = require("validatorjs");
-const i18n = require("../../config/i18n");
+const i18n = require("../../../config/i18n");
 const { STATUS_CODES, VALIDATION_RULES } = require("../../config/constant");
 
 const validateRequest = (data, rules, res) => {
