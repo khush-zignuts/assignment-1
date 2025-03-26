@@ -9,6 +9,7 @@ module.exports = {
   login: async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log("req.body: ", req.body);
 
       // Validate input
       if (!email || !password) {
@@ -22,16 +23,7 @@ module.exports = {
 
       const admin = await Admin.findOne({
         where: { email },
-        attributes: [
-          "id",
-          "name",
-          "email",
-          "password",
-          "gender",
-          "city",
-          "country",
-          "companyName",
-        ],
+        attributes: ["id", "name", "email", "password"],
       });
 
       // Check if admin exists

@@ -39,6 +39,7 @@ module.exports = {
       }
 
       let countryData = [];
+
       for (let i = 0; i < countries.length; i++) {
         const { name, lang } = countries[i];
         if (!name || !lang) {
@@ -70,8 +71,7 @@ module.exports = {
           status: STATUS_CODES.BAD_REQUEST,
           message: "Country already exists",
           data: null,
-          error:
-            "One or more countries with the same name and language already exist.",
+          error: null,
         });
       }
 
@@ -117,7 +117,6 @@ module.exports = {
       });
     }
   },
-
   updateCountry: async (req, res) => {
     try {
       let countries = req.body;

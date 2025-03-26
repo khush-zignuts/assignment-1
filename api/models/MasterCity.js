@@ -8,6 +8,7 @@ const MasterCity = sequelize.define("master_city", {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
+    allowNull: false,
   },
   countryId: {
     type: DataTypes.UUID,

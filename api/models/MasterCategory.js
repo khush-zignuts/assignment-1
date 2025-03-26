@@ -6,7 +6,8 @@ const MasterCategory = sequelize.define("master_category", {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
+    primaryKey: true,
+    allowNull: false,
   },
   ...CommonFields, 
   },

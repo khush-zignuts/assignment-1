@@ -32,7 +32,7 @@ const checkAdmin = async (req, res, next) => {
 
     const admin = await Admin.findOne({
       where: { id: decoded.id },
-      attributes: ["id", "accessedToken"],
+      attributes: ["id", "accessToken"],
     });
 
     if (!admin) {

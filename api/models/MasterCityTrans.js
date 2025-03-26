@@ -8,6 +8,7 @@ const MasterCityTrans = sequelize.define("master_city_trans", {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
+    allowNull: false,
   },
   master_city_id: {
     type: DataTypes.UUID,

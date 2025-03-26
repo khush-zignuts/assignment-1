@@ -10,24 +10,3 @@ i18n.configure({
   register: global, // registers the i18n function globally
 });
 module.exports = i18n;
-
-// const i18n = require("i18n");
-// const path = require("path");
-
-// i18n.configure({
-//   locales: ["en", "de"],
-//   directory: path.join(__dirname, "../locales"),
-//   defaultLocale: "en",
-//   queryParameter: "lang", // Allows users to set language via query (?lang=de)
-//   cookie: "lang", // Allows storing language in a cookie
-//   register: global,
-//   autoReload: true,
-//   syncFiles: true,
-//   objectNotation: true, // Allows nested translations
-//   api: {
-//     __: "t",
-//   },
-//   header: "accept-language",
-// });
-
-// module.exports = i18n;

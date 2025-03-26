@@ -1,7 +1,14 @@
 {
 	"api": {
 		"errors": {
-			"unauthorized": "api.errors.unauthorized"
+			"unauthorized": "api.errors.unauthorized",
+			"serverError": "api.errors.serverError"
+		},
+		"auth": {
+			"login": {
+				"invalidCredentials": "api.auth.login.invalidCredentials",
+				"success": "api.auth.login.success"
+			}
 		}
 	}
 }

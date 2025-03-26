@@ -1,3 +1,16 @@
+// npm init -y
+// npm install express
+// npm install sequelize mysql2  # For MySQL
+// npm install sequelize pg pg-hstore  # For PostgreSQL
+// npm install jsonwebtoken
+// npm install cors
+// npm install dotenv
+// npm install express-validator
+// npx nodemon server.js
+
+// npm install express sequelize pg pg-hstore bcrypt jsonwebtoken dotenv i18next i18next-fs-backend i18next-http-middleware cors body-parser
+
+// #Bhavnagar
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db"); // Import DB connection
 const CommonFields = require("./CommonField");
@@ -17,15 +30,7 @@ const User = sequelize.define(
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
+
     countryId: {
       type: DataTypes.UUID,
       allowNull: false,

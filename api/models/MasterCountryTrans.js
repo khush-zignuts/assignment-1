@@ -8,6 +8,7 @@ const MasterCountryTrans = sequelize.define("master_country_trans", {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
+    allowNull: false,
   },
   master_country_id: {
     type: DataTypes.UUID,

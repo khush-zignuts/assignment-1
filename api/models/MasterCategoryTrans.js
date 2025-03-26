@@ -10,6 +10,7 @@ const MasterCategoryTrans = sequelize.define(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
     },
     master_category_id: {
       type: DataTypes.UUID,

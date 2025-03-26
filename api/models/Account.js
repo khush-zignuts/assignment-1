@@ -16,6 +16,7 @@ const Account = sequelize.define(
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
+      field: "user_id",
       references: {
         model: user,
         key: "id",
@@ -24,6 +25,7 @@ const Account = sequelize.define(
     categoryId: {
       type: DataTypes.UUID,
       allowNull: false,
+      field: "category_id",
       references: {
         model: MasterCategory,
         key: "id",
@@ -32,6 +34,7 @@ const Account = sequelize.define(
     subcategoryId: {
       type: DataTypes.UUID,
       allowNull: false,
+      field: "subcategory_id",
       references: {
         model: MasterSubcategory,
         key: "id",
@@ -42,6 +45,11 @@ const Account = sequelize.define(
       allowNull: true,
     },
     ...CommonFields,
+  },
+  {
+    tableName: "accounts",
+    freezeTableName: true,
+    timestamps: false,
   }
 );
 
