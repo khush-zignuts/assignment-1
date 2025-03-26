@@ -5,6 +5,7 @@ const userRoutes = require("./src/routes/User/userRoutes");
 // const cookieParser = require("cookie-parser");
 const i18n = require("./src/config/i18n");
 const languageSelect = require("./src/middlewares/i18n");
+const adminBootstrap = require("./src/config/bootstrap");
 //app initialization
 
 const app = express();
@@ -39,6 +40,11 @@ app.use("/user", userRoutes);
 // at last port call :
 const PORT = process.env.PORT || 5000;
 console.log("PORT: ", PORT);
+
+// admin creation
+adminBootstrap()
+  .then((res) => console.log("adminBootstrap"))
+  .catch((err) => console.log(err.message));
 
 app.listen(PORT, async () => {
   // Sync Database and Start Server

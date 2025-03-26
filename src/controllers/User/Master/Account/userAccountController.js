@@ -180,6 +180,7 @@ module.exports = {
       });
     }
   },
+
   updateAccount: async (req, res) => {
     try {
       if (!validateRequest(req.body, VALIDATION_RULES.ACCOUNT, res)) return;
@@ -296,6 +297,7 @@ module.exports = {
       });
     }
   },
+
   deleteAccount: async (req, res) => {
     try {
       if (!validateRequest(req.body, VALIDATION_RULES.ACCOUNT, res)) return;
@@ -346,6 +348,7 @@ module.exports = {
       });
     }
   },
+
   // getAccountById: async (req, res) => {
   //   try {
   //     const { accountId } = req.params;
@@ -383,6 +386,12 @@ module.exports = {
   getAllAccounts: async (req, res) => {
     try {
       if (!validateRequest(req.body, VALIDATION_RULES.ACCOUNT, res)) return;
+
+      // Extract pagination parameters from the request
+      const page = parseInt(req.query.page, 10) || 1; // Default to page 1
+      const limit = parseInt(req.query.limit, 10) || 10; // Default to 10 records per page
+      const offset = (page - 1) * pageSize;
+
       const rawQuery = `
       SELECT
         ac.id AS id ,
@@ -403,10 +412,26 @@ module.exports = {
 
       `;
 
-      // // Execute the raw query
-      const accountsData = await sequelize.query(rawQuery, {
-        type: Sequelize.QueryTypes.SELECT,
-      });
+      // SQL query to count total records
+      const countQuery = `
+    SELECT COUNT(*) AS totalRecords
+    FROM accounts AS ac
+    WHERE ac."isDeleted" = false;
+  `;
+
+      // Execute the raw queries
+      const [accountsData, totalCountResult] = await Promise.all([
+        sequelize.query(rawQuery, {
+          replacements: { limit: pageSize, offset },
+          type: Sequelize.QueryTypes.SELECT,
+        }),
+        sequelize.query(countQuery, {
+          type: Sequelize.QueryTypes.SELECT,
+        }),
+      ]);
+
+      const totalRecords = parseInt(totalCountResult[0].totalRecords, 10);
+      const totalPages = Math.ceil(totalRecords / pageSize);
 
       // Handle empty data scenario
       if (!accountsData || accountsData.length === 0) {
@@ -414,6 +439,11 @@ module.exports = {
           status: STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.accounts.notFound") || "No accounts found",
           data: [],
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalRecords,
+          },
           error: null,
         });
       }
@@ -470,6 +500,11 @@ module.exports = {
         message:
           i18n.__("api.accounts.found") || "Accounts retrieved successfully",
         data: formattedData,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalRecords,
+        },
         error: null,
       });
     } catch (error) {

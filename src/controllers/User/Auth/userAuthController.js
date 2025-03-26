@@ -41,23 +41,43 @@ module.exports = {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      const newUser = await User.create({
+      const newuser = await User.create({
         name,
         email,
         password: hashedPassword,
         country_id,
         city_id,
         companyName,
+        created_at: new Date(), // Store the current timestamp
+        created_by: req.body ? req.body.name : "System", // User who performed the creation
+        isActive: true,
+      });
+
+      // Create a response object with only the selected fields
+      const responseUser = {
+        id: newuser.id,
+        name: newuser.name,
+        email: newuser.email,
+        gender: newuser.gender,
+        country: newuser.country,
+        city: newuser.city,
+        companyName: newuser.companyName,
+      };
+      res.json({
+        status: STATUS_CODES.CREATED,
+        message: i18n.__("api.auth.signup.success"),
+        data: responseUser,
+        error: null,
       });
       // res.status(201).json({ message: i18n.__("signup_success"), user: newUser });
-      res
-        .status(201)
-        .json({ message: i18n.__("api.auth.signup.success"), user: newUser });
     } catch (error) {
       console.log(error.message);
-      res
-        .status(500)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 
@@ -77,16 +97,30 @@ module.exports = {
         });
       }
 
-      const user = await User.findOne({ where: { email } });
+      const user = await User.findOne({
+        where: { email },
+        attributes: [
+          "id",
+          "name",
+          "email",
+          "password",
+          "gender",
+          "city",
+          "country",
+          "companyName",
+        ],
+      });
       // console.log("user: ", user);
 
       const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
       if (!isPasswordCorrect) {
-        return res
-          .status(401)
-          .json({ message: i18n.__("api.auth.login.invalidCredentials") });
-        // return res.status(401).json({ message: i18n.__("invalid_credentials") });
+        return res.json({
+          status: STATUS_CODES.UNAUTHORIZED,
+          message: i18n.__("api.auth.login.invalidCredentials"),
+          data: null,
+          error: null,
+        });
       }
 
       const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, {
@@ -95,82 +129,129 @@ module.exports = {
 
       user.accessToken = token;
       await user.save(); // ✅ Fixed: Now correctly updating instance
-
-      res.json({ message: i18n.__("api.auth.login.success"), token });
+      res.json({
+        status: STATUS_CODES.OK,
+        message: i18n.__("api.auth.login.success"),
+        data: { token },
+        error: null,
+      });
     } catch (error) {
       console.log(error.message);
-      res
-        .status(500)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 
   logout: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
       const { userId } = req.params; // Assuming userId is passed in request body
-
       if (!userId) {
-        return res
-          .status(400)
-          .json({ message: i18n.__("api.auth.logout.invalidCredentials") });
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: i18n.__("api.auth.logout.invalidCredentials"),
+          data: null,
+          error: null,
+        });
       }
 
       // Find user by ID
-      const user = await User.findOne({ where: { id: userId } });
+      const user = await User.findOne({
+        where: { id: userId },
+        attributes: [
+          "id",
+          "name",
+          "email",
+          "password",
+          "gender",
+          "city",
+          "country",
+          "companyName",
+        ],
+      });
 
       if (!user) {
-        return res
-          .status(404)
-          .json({ message: i18n.__("api.auth.logout.invalidCredentials") });
+        return res.json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.auth.logout.invalidCredentials"),
+          data: null,
+          error: null,
+        });
+      }
+      if (user.accessToken === null) {
+        return res.json({
+          status: STATUS_CODES.BAD_REQUEST,
+          message: "Already logged out",
+          data: null,
+          error: null,
+        });
       }
       // Set accessToken to NULL (logout)
       await User.update({ accessToken: null }, { where: { id: userId } });
-
-      return res
-        .status(200)
-        .json({ message: i18n.__("api.auth.logout.success") });
+      return res.json({
+        status: STATUS_CODES.OK,
+        message: i18n.__("api.auth.logout.success"),
+        data: null,
+        error: null,
+      });
     } catch (error) {
       console.error("Logout error:", error);
-      return res
-        .status(500)
-        .json({ message: i18n.__("api.errors.serverError") });
+      return res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 
   EditUser: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.USER, res)) return;
-      const userId = req.user.id; // Assuming user ID is available in req.user
-
-      // Validate input lengths
-      // if (name && name.length > 30) {
-      //   return res.status(400).json({ message: 'Name should not exceed 30 characters.' });
-      // }
-      // if (companyName && companyName.length > 64) {
-      //   return res.status(400).json({ message: 'Company name should not exceed 64 characters.' });
-      // }
-
-      // Find the user by ID
+      const { userId, name, password, country_id, city_id, companyName } =
+        req.body;
 
       const user = await User.findOne({
         where: { id: userId },
-        // attributes: ["id"],
+        attributes: [
+          "id",
+          "name",
+          "email",
+          "password",
+          "gender",
+          "city",
+          "country",
+          "companyName",
+        ],
       });
+
       if (!user) {
-        return res
-          .status(STATUS_CODES.NOT_FOUND)
-          .json({ message: i18n.__("api.auth.editUser.userNotFound") });
+        return res.json({
+          status: STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.auth.editUser.userNotFound"),
+          data: null,
+          error: null,
+        });
       }
-
-      const { name, password, country_id, city_id, companyName } = req.body;
-
       // Check if the user is deleted or inactive
       if (user.isDeleted) {
-        return res.status(403).json({ message: "User account is deleted." });
+        return res.json({
+          status: STATUS_CODES.FORBIDDEN,
+          message: "User deleted",
+          data: null,
+          error: null,
+        });
       }
+
       if (!user.isActive) {
-        return res.status(403).json({ message: "User account is inactive." });
+        return res.json({
+          status: STATUS_CODES.FORBIDDEN,
+          message: "User inactive",
+          data: null,
+          error: null,
+        });
       }
 
       // Update fields
@@ -178,6 +259,10 @@ module.exports = {
       if (country_id) user.country_id = country_id;
       if (city_id) user.city_id = city_id;
       if (companyName) user.companyName = companyName;
+
+      // Store the current timestamp and user who performed the update
+      user.updated_at = new Date();
+      user.updated_by = req.body ? req.body.name : "System";
 
       // Update password if provided
       if (password) {
@@ -187,14 +272,31 @@ module.exports = {
       // Save the updated user
       await user.save();
 
-      res
-        .status(STATUS_CODES.SUCCESS)
-        .json({ message: i18n.__("api.auth.editUser.profileUpdated"), user });
+      const updatedUser = {
+        userId: user.id,
+        name: user.name,
+        password: user.password, // ⚠️ Consider omitting this for security reasons
+        gender: user.gender,
+        country: user.country,
+        city: user.city,
+        companyName: user.companyName,
+        updated_at: new Date(), // Store the current timestamp
+        updated_by: req.user ? req.user.name : "System", // User who performed the update
+      };
+      res.json({
+        status: STATUS_CODES.SUCCESS,
+        message: i18n.__("api.auth.editUser.profileUpdated"),
+        data: updatedUser,
+        error: null,
+      });
     } catch (error) {
       console.error("Error updating profile:", error);
-      res
-        .status(STATUS_CODES.UNAUTHORIZED)
-        .json({ message: i18n.__("api.errors.serverError"), error });
+      res.json({
+        status: STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: null,
+        error: error.message,
+      });
     }
   },
 };

@@ -18,58 +18,57 @@ const validateRequest = (data, rules, res) => {
   return true;
 };
 module.exports = {
-  signup: async (req, res) => {
-    try {
-      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN, res)) return;
+  // signup: async (req, res) => {
+  //   try {
+  //     if (!validateRequest(req.body, VALIDATION_RULES.ADMIN, res)) return;
 
-      const { name, email, password } = req.body;
-      // console.log("req.body: ", req.body);
+  //     const { name, email, password } = req.body;
+  //     // console.log("req.body: ", req.body);
 
-      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN_SIGNUP, res))
-        return;
+  //     if (!validateRequest(req.body, VALIDATION_RULES.ADMIN_SIGNUP, res))
+  //       return;
 
-      // Check if email exists in Admin or User table
-      const existingAdmin = await Admin.findOne({ where: { email } });
-      const existingUser = await User.findOne({ where: { email } });
+  //     // Check if email exists in Admin or User table
+  //     const existingAdmin = await Admin.findOne({ where: { email } });
+  //     const existingUser = await User.findOne({ where: { email } });
 
-      if (existingAdmin || existingUser) {
-        return res.status(STATUS_CODES.BAD_REQUEST).json({
-          status: STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.auth.signup.emailExists"),
-          data: null,
-          error: null,
-        });
-      }
+  //     if (existingAdmin || existingUser) {
+  //       return res.status(STATUS_CODES.BAD_REQUEST).json({
+  //         status: STATUS_CODES.BAD_REQUEST,
+  //         message: i18n.__("api.auth.signup.emailExists"),
+  //         data: null,
+  //         error: null,
+  //       });
+  //     }
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+  //     const salt = await bcrypt.genSalt(10);
+  //     const hashedPassword = await bcrypt.hash(password, salt);
 
-      const newUser = await Admin.create({
-        name,
-        email,
-        password: hashedPassword,
-      });
-      // res.status(201).json({ message: i18n.__("signup_success"), user: newUser });
-      return res.json({
-        status: STATUS_CODES.CREATED,
-        message: i18n.__("api.auth.signup.success"),
-        data: { user: newUser },
-        error: null,
-      });
-    } catch (error) {
-      console.error("Signup error:", error);
-      return res.status(STATUS_CODES.SERVER_ERROR).json({
-        status: STATUS_CODES.SERVER_ERROR,
-        message: i18n.__("api.errors.serverError"),
-        data: null,
-        error: error.message,
-      });
-    }
-  },
+  //     const newUser = await Admin.create({
+  //       name,
+  //       email,
+  //       password: hashedPassword,
+  //     });
+  //     // res.status(201).json({ message: i18n.__("signup_success"), user: newUser });
+  //     return res.json({
+  //       status: STATUS_CODES.CREATED,
+  //       message: i18n.__("api.auth.signup.success"),
+  //       data: { user: newUser },
+  //       error: null,
+  //     });
+  //   } catch (error) {
+  //     console.error("Signup error:", error);
+  //     return res.status(STATUS_CODES.SERVER_ERROR).json({
+  //       status: STATUS_CODES.SERVER_ERROR,
+  //       message: i18n.__("api.errors.serverError"),
+  //       data: null,
+  //       error: error.message,
+  //     });
+  //   }
+  // },
 
   login: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.ADMIN, res)) return;
       const { email, password } = req.body;
       console.log(" req.body: ", req.body);
 

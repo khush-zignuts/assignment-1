@@ -7,7 +7,7 @@ const {
 const router = express.Router();
 
 //auth User
-router.post("/signup", signup);
+// router.post("/signup", signup);
 router.post("/login", login);
 
 //delete user:

@@ -362,6 +362,9 @@ module.exports = {
     try {
       if (!validateRequest(req.body, VALIDATION_RULES.CATEGORY, res)) return;
 
+      const { page = 1, limit = 10 } = req.query;
+      const offset = (page - 1) * limit;
+
       const search = req.query.q;
       console.log("search: ", search);
 
@@ -385,9 +388,11 @@ module.exports = {
           LEFT JOIN master_subcategory_trans as mst ON ms.id = mst.master_subcategory_id
           WHERE mc."isDeleted" = false
           ORDER BY mc.created_at DESC
+          LIMIT :limit OFFSET :offset;
           `;
           // // Execute the raw query
           const categoriesData = await sequelize.query(rawQuery, {
+            replacements: { limit, offset },
             type: Sequelize.QueryTypes.SELECT,
           });
           console.log("Fetched Categories: ", categoriesData);
@@ -455,12 +460,30 @@ module.exports = {
             }
             return acc;
           }, []);
+
+          // Calculate total records for pagination
+          const countQuery = `
+              SELECT COUNT(*) AS total
+              FROM master_categories AS mc
+              WHERE mc."isDeleted" = false;
+            `;
+          const countResult = await sequelize.query(countQuery, {
+            type: Sequelize.QueryTypes.SELECT,
+          });
+          const totalRecords = countResult[0].total;
+          const totalPages = Math.ceil(totalRecords / limit);
+
           return res.json({
             status: STATUS_CODES.SUCCESS,
             message:
               i18n.__("api.categories.listSuccess") ||
               "Categories listed successfully",
             data: formattedData,
+            pagination: {
+              currentPage: page,
+              totalPages,
+              totalRecords,
+            },
             error: null,
           });
         } catch (error) {
@@ -497,11 +520,14 @@ module.exports = {
               AND mct.lang = :lang
               AND mst.lang = :lang
               ORDER BY mc.created_at DESC
+              LIMIT :limit OFFSET :offset;
               `;
-          // LIMIT :limit OFFSET :offset;
+
           // // Execute the raw query
           const categoriesData = await sequelize.query(rawQuery, {
             replacements: {
+              limit,
+              offset,
               searchQuery: `%${search}%`,
               lang,
               // , limit, offset
@@ -548,6 +574,11 @@ module.exports = {
               i18n.__("api.categories.listSuccess") ||
               "Categories listed successfully",
             data: formattedData,
+            pagination: {
+              currentPage: page,
+              totalPages,
+              totalRecords,
+            },
             error: null,
           });
         } catch (error) {
