@@ -2,15 +2,16 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const i18n = require("../config/i18n");
-const { STATUS_CODES } = require("../config/constants");
+const { HTTP_STATUS_CODES } = require("../config/constants");
 
 const checkAdmin = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+    console.log('authHeader: ', authHeader);
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.json({
-        status: STATUS_CODES.UNAUTHORIZED,
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__("api.errors.unauthorized"),
         data: null,
         error: null,
@@ -21,7 +22,7 @@ const checkAdmin = async (req, res, next) => {
 
     if (!token) {
       return res.json({
-        status: STATUS_CODES.UNAUTHORIZED,
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__("Access denied. No token provided."),
         data: null,
         error: null,
@@ -32,12 +33,12 @@ const checkAdmin = async (req, res, next) => {
 
     const admin = await Admin.findOne({
       where: { id: decoded.id },
-      attributes: ["id", "accessedToken"],
+      attributes: ["id", "accessToken"],
     });
 
     if (!admin) {
       return res.json({
-        status: STATUS_CODES.UNAUTHORIZED,
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__("api.errors.unauthorized"),
         data: null,
         error: null,
@@ -46,7 +47,7 @@ const checkAdmin = async (req, res, next) => {
 
     if (admin.accessToken !== token) {
       return res.json({
-        status: STATUS_CODES.UNAUTHORIZED,
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__(
           "api.errors.unauthorized" || "Invalid or expired token."
         ),
@@ -61,7 +62,7 @@ const checkAdmin = async (req, res, next) => {
     next(); // Proceed if admin
   } catch (error) {
     return res.json({
-      status: STATUS_CODES.UNAUTHORIZED,
+      status: HTTP_STATUS_CODES.UNAUTHORIZED,
       message: i18n.__("api.errors.unauthorized"),
       data: null,
       error: error.message,

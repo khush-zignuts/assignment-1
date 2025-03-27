@@ -6,16 +6,18 @@ const MasterCategory = require("./MasterCategory");
 const MasterSubcategory = require("./MasterSubcategory");
 
 const Account = sequelize.define(
-  "account",
+  "Account",
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
     },
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
+      field: "user_id",
       references: {
         model: user,
         key: "id",
@@ -24,14 +26,16 @@ const Account = sequelize.define(
     categoryId: {
       type: DataTypes.UUID,
       allowNull: false,
+      field: "category_id",
       references: {
         model: MasterCategory,
         key: "id",
       },
     },
-    subcategoryId: {
+    subCategoryId: {
       type: DataTypes.UUID,
       allowNull: false,
+      field: "subcategory_id",
       references: {
         model: MasterSubcategory,
         key: "id",
@@ -42,6 +46,11 @@ const Account = sequelize.define(
       allowNull: true,
     },
     ...CommonFields,
+  },
+  {
+    tableName: "account",
+    freezeTableName: true,
+    timestamps: false,
   }
 );
 

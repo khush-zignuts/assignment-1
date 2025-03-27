@@ -8,7 +8,7 @@ const router = express.Router();
 const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
 
 //create category
-router.post("/add ", checkAdmin, addSubcategory);
+router.post("/add", checkAdmin, addSubcategory);
 
 //update category
 router.post("/update ", checkAdmin, updateSubcategory);

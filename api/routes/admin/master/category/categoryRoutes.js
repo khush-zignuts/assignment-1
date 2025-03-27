@@ -1,12 +1,13 @@
 const express = require("express");
+
+const router = express.Router();
+const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
 const {
   addCategory,
   updateCategory,
   deleteCategory,
   listingCategory,
-} = require("../../../../controllers/Admin/master/Category/CategoryController");
-const router = express.Router();
-const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware to check admin access
+} = require("../../../../controllers/admin/master/category/CategoryController");
 
 //create category
 router.post("/add", checkAdmin, addCategory);

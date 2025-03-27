@@ -1,4 +1,5 @@
 const i18n = require("../config/i18n");
+
 const languageSelect = (req, res, next) => {
   const lang = req.headers["accept-language"]; // Get the preferred language
 

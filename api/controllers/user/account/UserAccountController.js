@@ -1,6 +1,6 @@
 const Validator = require("validatorjs");
 const i18n = require("../../../config/i18n");
-const { STATUS_CODES } = require("../../../config/constants");
+const { HTTP_STATUS_CODES } = require("../../../config/constants");
 const { VALIDATION_RULES } = require("../../../config/validationRules");
 const { Sequelize, Op } = require("sequelize");
 const sequelize = require("../../../config/db");
@@ -16,7 +16,7 @@ const validateRequest = (data, rules, res) => {
   const validation = new Validator(data, rules);
   if (validation.fails()) {
     res
-      .status(STATUS_CODES.BAD_REQUEST)
+      .status(HTTP_STATUS_CODES.BAD_REQUEST)
       .json({ message: validation.errors.all() });
     return false;
   }
@@ -146,7 +146,7 @@ module.exports = {
 
       return res.status(201).json({
         status: 201,
-        message: "Account created successfully.",
+        message: "Account created  OKfully.",
         data: { account_id },
         error: null,
       });
@@ -255,7 +255,7 @@ module.exports = {
           categoryId,
           subcategoryId: subCategoryId,
           description,
-          updated_at: new Date(),
+          updatedAt: Math.floor(Date.now() / 1000),
           updated_by: req.body ? req.body.name : "System",
         },
         { where: { id: accountId } }
@@ -274,7 +274,7 @@ module.exports = {
 
       return res.status(200).json({
         status: 200,
-        message: "Account updated successfully.",
+        message: "Account updated  OKfully.",
         data: { accountId },
         error: null,
       });
@@ -296,8 +296,8 @@ module.exports = {
 
       // Validate input
       if (!accountId) {
-        return res.status(STATUS_CODES.BAD_REQUEST).json({
-          status: STATUS_CODES.BAD_REQUEST,
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.accounts.delete.missingFields"),
           data: null,
           error: "Missing accountId or usersId in request.",
@@ -311,8 +311,8 @@ module.exports = {
       });
 
       if (!account) {
-        return res.status(STATUS_CODES.NOT_FOUND).json({
-          status: STATUS_CODES.NOT_FOUND,
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.accounts.delete.notFound"),
           data: null,
           error: "Account not found or user not authorized.",
@@ -320,18 +320,21 @@ module.exports = {
       }
 
       // Perform soft delete
-      await Account.update({ isDeleted: true }, { where: { id: accountId } });
+      await Account.update(
+        { isDeleted: true, deletedAt: Math.floor(Date.now() / 1000) },
+        { where: { id: accountId } }
+      );
 
-      return res.status(STATUS_CODES.SUCCESS).json({
-        status: STATUS_CODES.SUCCESS,
-        message: i18n.__("api.accounts.delete.success"),
+      return res.status(HTTP_STATUS_CODES.OK).json({
+        status: HTTP_STATUS_CODES.OK,
+        message: i18n.__("api.accounts.delete.OK"),
         data: { accountId },
         error: null,
       });
     } catch (error) {
       console.error("Error deleting account:", error);
-      return res.status(STATUS_CODES.SERVER_ERROR).json({
-        status: STATUS_CODES.SERVER_ERROR,
+      return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message || "Internal server error.",
@@ -391,8 +394,8 @@ module.exports = {
 
       // Handle empty data scenario
       if (!accountsData || accountsData.length === 0) {
-        return res.status(STATUS_CODES.NOT_FOUND).json({
-          status: STATUS_CODES.NOT_FOUND,
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.accounts.notFound") || "No accounts found",
           data: [],
           pagination: {
@@ -440,10 +443,9 @@ module.exports = {
 
       // Return all accounts
       // Return formatted accounts
-      return res.status(STATUS_CODES.SUCCESS).json({
-        status: STATUS_CODES.SUCCESS,
-        message:
-          i18n.__("api.accounts.found") || "Accounts retrieved successfully",
+      return res.status(HTTP_STATUS_CODES.OK).json({
+        status: HTTP_STATUS_CODES.OK,
+        message: i18n.__("api.accounts.found") || "Accounts retrieved  OKfully",
         data: formattedData,
         pagination: {
           currentPage: page,
@@ -454,8 +456,8 @@ module.exports = {
       });
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      return res.status(STATUS_CODES.SERVER_ERROR).json({
-        status: STATUS_CODES.SERVER_ERROR,
+      return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message || "Internal server error.",

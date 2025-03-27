@@ -11,7 +11,7 @@ const checkUser = async (req, res, next) => {
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
-        .status(STATUS_CODES.UNAUTHORIZED)
+        .status(HTTP_STATUS_CODES.UNAUTHORIZED)
         .json({ message: i18n.__("api.errors.unauthorized") });
     }
 
@@ -20,7 +20,7 @@ const checkUser = async (req, res, next) => {
 
     if (!token) {
       return res
-        .status(STATUS_CODES.UNAUTHORIZED)
+        .status(HTTP_STATUS_CODES.UNAUTHORIZED)
         .json({ message: i18n.__("Access denied. No token provided.") });
     }
 

@@ -2,37 +2,44 @@ const { DataTypes } = require("sequelize");
 const Sequelize = require("sequelize");
 
 const CommonField = {
-  created_at: {
-    type: DataTypes.DATE,
+  createdAt: {
+    type: DataTypes.BIGINT,
+    field: "created_at",
     allowNull: true,
-    defaultValue: Sequelize.NOW,
   },
-  created_by: {
-    type: DataTypes.STRING(30),
+  createdBy: {
+    type: DataTypes.UUID,
+    field: "created_by",
     allowNull: true,
   },
   isDeleted: {
     type: DataTypes.BOOLEAN,
+    field: "is_deleted",
     defaultValue: false,
   },
   isActive: {
     type: DataTypes.BOOLEAN,
+    field: "is_active",
     defaultValue: true,
   },
-  updated_at: {
+  updatedAt: {
+    type: DataTypes.BIGINT,
+    field: "updated_at",
+    allowNull: true,
+  },
+  updatedBy: {
+    type: DataTypes.UUID,
+    field: "updated_by",
+    allowNull: true,
+  },
+  deletedAt: {
     type: DataTypes.DATE,
+    field: "deleted_at",
     allowNull: true,
   },
-  updated_by: {
-    type: DataTypes.STRING(30),
-    allowNull: true,
-  },
-  deleted_at: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  deleted_by: {
-    type: DataTypes.STRING(30),
+  deletedBy: {
+    type: DataTypes.UUID,
+    field: "deleted_by",
     allowNull: true,
   },
 };

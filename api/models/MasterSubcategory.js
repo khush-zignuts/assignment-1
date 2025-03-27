@@ -3,21 +3,31 @@ const sequelize = require("../config/db");
 const CommonFields = require("./CommonField");
 const MasterCategory = require("./MasterCategory");
 
-const MasterSubcategory = sequelize.define("master_subcategory", {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  categoryId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: MasterCategory,
-      key: "id",
+const MasterSubcategory = sequelize.define(
+  "MasterSubcategory",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false,
     },
+    categoryId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: "category_id",
+      references: {
+        model: MasterCategory,
+        key: "id",
+      },
+    },
+    ...CommonFields,
   },
-  ...CommonFields,
-});
+  {
+    tableName: "master_subcategory",
+    freezeTableName: true,
+    timestamps: false,
+  }
+);
 
 module.exports = MasterSubcategory;

@@ -18,8 +18,8 @@ Account.belongsTo(User, { foreignKey: "userId" });
 // AccountTrans.sync({ force: true, alter: true });
 
 // 2. Account with AccountTrans
-Account.hasOne(AccountTrans, { foreignKey: "Account_id", onDelete: "CASCADE" });
-AccountTrans.belongsTo(Account, { foreignKey: "Account_id" });
+Account.hasOne(AccountTrans, { foreignKey: "accountId", onDelete: "CASCADE" });
+AccountTrans.belongsTo(Account, { foreignKey: "accountId" });
 
 // 3. Account with Category
 MasterCategory.hasMany(Account, { foreignKey: "categoryId" }); // One category, many accounts
@@ -29,19 +29,19 @@ Account.belongsTo(MasterCategory, {
 });
 
 //4. Account belongs to a single SubCategory
-MasterSubcategory.hasMany(Account, { foreignKey: "subcategoryId" }); // One subcategory, many accounts
+MasterSubcategory.hasMany(Account, { foreignKey: "subCategoryId" }); // One subcategory, many accounts
 Account.belongsTo(MasterSubcategory, {
-  foreignKey: "subcategoryId",
+  foreignKey: "subCategoryId",
   onDelete: "CASCADE",
 });
 
 // 5. MasterCategory and MasterCategoryTrans (One-to-Many)
 MasterCategory.hasMany(MasterCategoryTrans, {
-  foreignKey: "master_category_id",
+  foreignKey: "masterCategoryId",
   onDelete: "CASCADE",
 });
 MasterCategoryTrans.belongsTo(MasterCategory, {
-  foreignKey: "master_category_id",
+  foreignKey: "masterCategoryId",
 });
 
 // 6. MasterCategory and MasterSubcategory (One-to-Many)
@@ -55,22 +55,22 @@ MasterSubcategory.belongsTo(MasterCategory, {
 
 // 7. MasterSubcategory and MasterSubcategoryTrans (One-to-Many)
 MasterSubcategory.hasMany(MasterSubcategoryTrans, {
-  foreignKey: "master_subcategory_id",
+  foreignKey: "masterSubcategoryId",
   onDelete: "CASCADE",
 });
 MasterSubcategoryTrans.belongsTo(MasterSubcategory, {
-  foreignKey: "master_subcategory_id",
+  foreignKey: "masterSubcategoryId",
 });
 
 // MasterCountryTrans.sync({ force: true, alter: true });
 
 // 8. MasterCountry and MasterCountryTrans (One-to-Many)
 MasterCountry.hasMany(MasterCountryTrans, {
-  foreignKey: "master_country_id",
+  foreignKey: "masterCountryId",
   onDelete: "CASCADE",
 });
 MasterCountryTrans.belongsTo(MasterCountry, {
-  foreignKey: "master_country_id",
+  foreignKey: "masterCountryId",
 });
 
 // MasterCity.sync({ force: true, alter: true });
@@ -88,11 +88,11 @@ MasterCity.belongsTo(MasterCountry, {
 
 // 10. MasterCity and MasterCityTrans (One-to-Many)
 MasterCity.hasMany(MasterCityTrans, {
-  foreignKey: "master_city_id",
+  foreignKey: "masterCityId",
   onDelete: "CASCADE",
 });
 MasterCityTrans.belongsTo(MasterCity, {
-  foreignKey: "master_city_id",
+  foreignKey: "masterCityId",
 });
 
 module.exports = {

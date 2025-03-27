@@ -4,32 +4,38 @@ const CommonFields = require("./CommonField");
 const MasterSubcategory = require("./MasterSubcategory");
 
 const MasterSubcategoryTrans = sequelize.define(
-  "master_subcategory_trans",
+  "MasterSubcategoryTrans",
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
     },
-    master_subcategory_id: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: MasterSubcategory,
-          key: "id",
-        },
+    masterSubcategoryId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: "master_subcategory_id",
+      references: {
+        model: MasterSubcategory,
+        key: "id",
       },
-      name: {
-        type: DataTypes.STRING(128), // Storing name as an array
-        allowNull: false,
-      },
-      lang: {
-        type:  DataTypes.STRING(10), // Storing language as an array ('en', 'de')
-        allowNull: false,
-      },
+    },
+    name: {
+      type: DataTypes.STRING(128), // Storing name as an array
+      allowNull: false,
+    },
+    lang: {
+      type: DataTypes.STRING(10), // Storing language as an array ('en', 'de')
+      allowNull: false,
+    },
     ...CommonFields,
   },
- 
+  {
+    tableName: "master_subcategory_trans",
+    freezeTableName: true,
+    timestamps: false,
+  }
 );
 
 module.exports = MasterSubcategoryTrans;

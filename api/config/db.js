@@ -7,12 +7,12 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 5432, 
+    port: process.env.DB_PORT || 5432,
     dialect: "postgres",
-    logging: false, 
+    logging: false,
     define: {
-      timestamps: false // Automatically add createdAt & updatedAt fields
-    } 
+      timestamps: false, // Automatically add createdAt & updatedAt fields
+    },
   }
 );
 
@@ -20,9 +20,9 @@ const sequelize = new Sequelize(
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log("✅ Connected to PostgreSQL Database successfully!");
+    console.log(" Connected to PostgreSQL Database  OKfully!");
   } catch (error) {
-    console.error("❌ Unable to connect to the database:", error);
+    console.error("Unable to connect to the database:", error);
   }
 })();
 

@@ -9,6 +9,7 @@ const Admin = sequelize.define(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
     },
     name: {
       type: DataTypes.STRING(30),
@@ -28,11 +29,16 @@ const Admin = sequelize.define(
     },
     accessToken: {
       type: DataTypes.TEXT,
+      field: "access_token",
       allowNull: true,
     },
     ...CommonField,
   },
-  
+  {
+    tableName: "admins",
+    freezeTableName: true,
+    timestamps: false,
+  }
 );
 
 module.exports = Admin;

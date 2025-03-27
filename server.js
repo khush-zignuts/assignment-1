@@ -3,6 +3,7 @@ const express = require("express");
 const adminRoutes = require("./api/routes/admin/index");
 const userRoutes = require("./api/routes//user/index");
 const i18n = require("./api/config/i18n");
+const sequelize = require("./api/config/db");
 const languageSelect = require("./api/middlewares/i18n");
 const adminBootstrap = require("./api/config/bootstrap");
 //app initialization
@@ -37,7 +38,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   // Sync Database and Start Server
   try {
-    // await sequelize.sync({ alter: true }); // or { force: true } to drop & recreate tables (CAUTION)
+    await sequelize.sync({ alter: true }); // or { force: true } to drop & recreate tables (CAUTION)
     console.log(`Server is running on port ${PORT}`);
   } catch (error) {
     console.log(error.message);

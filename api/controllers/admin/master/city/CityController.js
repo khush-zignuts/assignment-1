@@ -1,113 +1,104 @@
 const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const i18n = require("../../../../config/i18n");
-const { STATUS_CODES } = require("../../../../config/constants");
+const { HTTP_STATUS_CODES } = require("../../../../config/constants");
 const { VALIDATION_RULES } = require("../../../../config/validationRules");
-
-const {
-  MasterCountryTrans,
-  MasterCountry,
-  MasterCity,
-  MasterCityTrans,
-} = require("../../../../models");
-
-const Validator = require("validatorjs");
-const validateRequest = (data, rules, res) => {
-  const validation = new Validator(data, rules);
-  if (validation.fails()) {
-    res
-      .status(STATUS_CODES.BAD_REQUEST)
-      .json({ message: validation.errors.all() });
-    return false;
-  }
-  return true;
-};
+const sequelize = require("../../../../config/db");
+const { MasterCity, MasterCityTrans } = require("../../../../models");
+const VALIDATOR = require("validatorjs");
 
 module.exports = {
   addCity: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.CITY, res)) return;
-      let cities = req.body.data;
+      const adminId = req.admin.id;
 
-      if (!Array.isArray(cities) || cities.length === 0) {
-        return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.cities.invalidInput"),
+      let { cities } = req.body;
+
+      const validation = new VALIDATOR(req.body, {
+        cities: VALIDATION_RULES.CITY.cities,
+      });
+
+      if (validation.fails()) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
+          message: "Validation failed.",
           data: null,
-          error: null,
+          error: validation.errors.all(),
         });
       }
-      let cityData = [];
 
       for (let i = 0; i < cities.length; i++) {
-        const { countryId, name, lang } = cities[i];
+        const query = `
+        SELECT 
+        mct.id AS id,
+        mc.country_id AS countryId
 
-        if (!name || !lang || !countryId) {
-          return res.json({
-            status: STATUS_CODES.BAD_REQUEST,
-            message: "Both name and lang are required",
+        FROM master_city AS mc
+        JOIN master_city_trans AS mct
+
+        On mc.id = mct.master_city_id
+        
+        WHERE mc.is_deleted = false
+        AND mc.country_id = :countryId
+        AND mct.lang = :lang
+        AND LOWER(mct.name) = LOWER(:name);
+        `;
+
+        const existingCity = await sequelize.query(query, {
+          replacements: {
+            countryId: cities[i].countryId,
+            name: cities[i].name,
+            lang: cities[i].lang,
+          },
+          type: sequelize.QueryTypes.SELECT,
+        });
+
+        // If a category exists, return a conflict response
+        if (existingCity.length > 0) {
+          return res.status(HTTP_STATUS_CODES.CONFLICT).json({
+            status: HTTP_STATUS_CODES.CONFLICT,
+            message: `city '${cities[i].name}' already exists in '${cities[i].lang}'`,
             data: null,
             error: null,
           });
         }
-
-        cityData.push({ countryId, name: name.toLowerCase(), lang });
-      }
-
-      //  Check for existing vity
-      const existingCity = await MasterCityTrans.findAll({
-        where: {
-          isDeleted: false,
-          [Op.or]: cityData.map((c) => ({
-            name: c.name,
-            lang: c.lang,
-          })),
-        },
-        attributes: ["id", "master_city_id", "name", "lang"],
-      });
-
-      console.log("existingCity: ", existingCity);
-      if (existingCity && existingCity.length > 0) {
-        return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
-          message: "City already exists",
-          data: null,
-          error: null,
-        });
       }
 
       // Generate UUID for MasterCity
-      const master_City_id = uuidv4();
-
-      // // // Create master-category || cat_id put in master category table
-      const City = await MasterCity.create({
-        id: master_City_id,
-        countryId: cityData[0].countryId,
-      });
+      const masterCityId = uuidv4();
 
       // // Insert Translations Using `bulkCreate`
       let City_trans = [];
-      for (let i = 0; i < cityData.length; i++) {
+      for (let i = 0; i < cities.length; i++) {
         City_trans.push({
-          master_city_id: master_City_id,
-          name: cityData[i].name,
-          lang: cityData[i].lang,
+          masterCityId: masterCityId,
+          name: cities[i].name,
+          lang: cities[i].lang,
+          createdAt: Math.floor(Date.now() / 1000),
+          createdBy: adminId,
         });
       }
+      // // // Create master-category || cat_id put in master category table
+      const City = await MasterCity.create({
+        id: masterCityId,
+        countryId: cities[0].countryId,
+        createdAt: Math.floor(Date.now() / 1000),
+        createdBy: adminId,
+      });
 
       // // // Create master-category-trans
       await MasterCityTrans.bulkCreate(City_trans);
 
       return res.json({
-        status: STATUS_CODES.CREATED,
-        message: i18n.__("api.cities.addSuccess"),
-        data: { master_City_id },
+        status: HTTP_STATUS_CODES.CREATED,
+        message: i18n.__("api.cities.addsuccess"),
+        data: { masterCityId },
         error: null,
       });
     } catch (error) {
       console.error(error);
       return res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,
@@ -117,12 +108,14 @@ module.exports = {
 
   updateCity: async (req, res) => {
     try {
+      const adminId = req.admin.id;
+
       let cities = req.body.data;
 
       // Validate request payload
       if (!Array.isArray(cities) || cities.length === 0) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.cities.invalidInput"),
           data: null,
           error: null,
@@ -136,7 +129,7 @@ module.exports = {
 
         if (!id || !name || !lang) {
           return res.json({
-            status: STATUS_CODES.BAD_REQUEST,
+            status: HTTP_STATUS_CODES.BAD_REQUEST,
             message: "ID, name, and lang are required",
             data: null,
             error: null,
@@ -156,7 +149,7 @@ module.exports = {
 
       if (!existingCities || existingCities.length === 0) {
         return res.json({
-          status: STATUS_CODES.NOT_FOUND,
+          status: HTTP_STATUS_CODES.NOT_FOUND,
           message: "City not found",
           data: null,
           error: null,
@@ -177,7 +170,7 @@ module.exports = {
       });
       if (duplicateCity) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "A city with the same name and language already exists",
           data: null,
           error: null,
@@ -192,15 +185,15 @@ module.exports = {
       }
 
       return res.json({
-        status: STATUS_CODES.SUCCESS,
-        message: i18n.__("api.cities.updateSuccess"),
+        status: HTTP_STATUS_CODES.OK,
+        message: i18n.__("api.cities.update OK"),
         data: null,
         error: null,
       });
     } catch (error) {
       console.error("Error updating city:", error);
       return res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,
@@ -211,10 +204,11 @@ module.exports = {
   deleteCity: async (req, res) => {
     try {
       const { cityId } = req.params; // Ex
+      const adminId = req.admin.id;
 
       if (!cityId) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "City ID is required",
           data: null,
           error: null,
@@ -229,7 +223,7 @@ module.exports = {
 
       if (!city) {
         return res.json({
-          status: STATUS_CODES.NOT_FOUND,
+          status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.cities.notFound"),
           data: null,
           error: null,
@@ -244,7 +238,7 @@ module.exports = {
 
       if (assignedAccounts) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.cities.assignedToAccount"),
           data: null,
           error: null,
@@ -252,12 +246,12 @@ module.exports = {
       }
 
       await MasterCityTrans.update(
-        { isDeleted: true },
+        { isDeleted: true, deletedA: Math.floor(Date.now() / 1000) },
         { where: { id: cityId } }
       );
 
       return res.json({
-        status: STATUS_CODES.SUCCESS,
+        status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.cities.deleted"),
         data: null,
         error: null,
@@ -265,7 +259,7 @@ module.exports = {
     } catch (error) {
       console.error("Error deleting city:", error);
       return res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,

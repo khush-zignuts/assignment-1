@@ -1,7 +1,0 @@
-{
-	"api": {
-		"errors": {
-			"unauthorized": "api.errors.unauthorized"
-		}
-	}
-}

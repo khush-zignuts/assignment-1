@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Admin = require("../../../models/Admin");
 const Validator = require("validatorjs");
-const { STATUS_CODES } = require("../../../config/constants");
+const { HTTP_STATUS_CODES } = require("../../../config/constants");
 const { VALIDATION_RULES } = require("../../../config/validationRules");
 
 const i18n = require("../../../config/i18n");
@@ -12,7 +12,7 @@ const validateRequest = (data, rules, res) => {
   const validation = new Validator(data, rules);
   if (validation.fails()) {
     res
-      .status(STATUS_CODES.BAD_REQUEST)
+      .status(HTTP_STATUS_CODES.BAD_REQUEST)
       .json({ message: validation.errors.all() });
     return false;
   }
@@ -38,7 +38,7 @@ module.exports = {
 
       if (existingUser || existingAdmin) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.auth.signup.emailExists"),
           data: null,
           error: null,
@@ -55,7 +55,7 @@ module.exports = {
         country_id,
         city_id,
         companyName,
-        created_at: new Date(), // Store the current timestamp
+        createdAt: Math.floor(Date.now() / 1000), // Store the current timestamp
         created_by: req.body ? req.body.name : "System", // User who performed the creation
         isActive: true,
       });
@@ -71,15 +71,15 @@ module.exports = {
         companyName: newuser.companyName,
       };
       res.json({
-        status: STATUS_CODES.CREATED,
-        message: i18n.__("api.auth.signup.success"),
+        status: HTTP_STATUS_CODES.CREATED,
+        message: i18n.__("api.auth.signup.OK"),
         data: responseUser,
         error: null,
       });
     } catch (error) {
       console.log(error.message);
       res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,
@@ -94,7 +94,7 @@ module.exports = {
       // Validate input
       if (!email || !password) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message:
             i18n.__("api.auth.login.missingFields") ||
             "Email and password are required.",
@@ -121,7 +121,7 @@ module.exports = {
 
       if (!isPasswordCorrect) {
         return res.json({
-          status: STATUS_CODES.UNAUTHORIZED,
+          status: HTTP_STATUS_CODES.UNAUTHORIZED,
           message: i18n.__("api.auth.login.invalidCredentials"),
           data: null,
           error: null,
@@ -135,15 +135,15 @@ module.exports = {
       user.accessToken = token;
       await user.save(); // ✅ Fixed: Now correctly updating instance
       res.json({
-        status: STATUS_CODES.OK,
-        message: i18n.__("api.auth.login.success"),
+        status: HTTP_STATUS_CODES.OK,
+        message: i18n.__("api.auth.login.OK"),
         data: { token },
         error: null,
       });
     } catch (error) {
       console.log(error.message);
       res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,
@@ -156,7 +156,7 @@ module.exports = {
       const { userId } = req.params; // Assuming userId is passed in request body
       if (!userId) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.auth.logout.invalidCredentials"),
           data: null,
           error: null,
@@ -180,7 +180,7 @@ module.exports = {
 
       if (!user) {
         return res.json({
-          status: STATUS_CODES.NOT_FOUND,
+          status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.auth.logout.invalidCredentials"),
           data: null,
           error: null,
@@ -188,24 +188,27 @@ module.exports = {
       }
       if (user.accessToken === null) {
         return res.json({
-          status: STATUS_CODES.BAD_REQUEST,
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Already logged out",
           data: null,
           error: null,
         });
       }
       // Set accessToken to NULL (logout)
-      await User.update({ accessToken: null }, { where: { id: userId } });
+      await User.update(
+        { accessToken: null, updatedAt: Math.floor(Date.now() / 1000) },
+        { where: { id: userId } }
+      );
       return res.json({
-        status: STATUS_CODES.OK,
-        message: i18n.__("api.auth.logout.success"),
+        status: HTTP_STATUS_CODES.OK,
+        message: i18n.__("api.auth.logout.OK"),
         data: null,
         error: null,
       });
     } catch (error) {
       console.error("Logout error:", error);
       return res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,
@@ -234,7 +237,7 @@ module.exports = {
 
       if (!user) {
         return res.json({
-          status: STATUS_CODES.NOT_FOUND,
+          status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.auth.editUser.userNotFound"),
           data: null,
           error: null,
@@ -243,7 +246,7 @@ module.exports = {
       // Check if the user is deleted or inactive
       if (user.isDeleted) {
         return res.json({
-          status: STATUS_CODES.FORBIDDEN,
+          status: HTTP_STATUS_CODES.FORBIDDEN,
           message: "User deleted",
           data: null,
           error: null,
@@ -252,7 +255,7 @@ module.exports = {
 
       if (!user.isActive) {
         return res.json({
-          status: STATUS_CODES.FORBIDDEN,
+          status: HTTP_STATUS_CODES.FORBIDDEN,
           message: "User inactive",
           data: null,
           error: null,
@@ -266,7 +269,7 @@ module.exports = {
       if (companyName) user.companyName = companyName;
 
       // Store the current timestamp and user who performed the update
-      user.updated_at = new Date();
+      user.updatedAt = Math.floor(Date.now() / 1000);
       user.updated_by = req.body ? req.body.name : "System";
 
       // Update password if provided
@@ -285,11 +288,11 @@ module.exports = {
         country: user.country,
         city: user.city,
         companyName: user.companyName,
-        updated_at: new Date(), // Store the current timestamp
+        updatedAt: Math.floor(Date.now() / 1000),
         updated_by: req.user ? req.user.name : "System", // User who performed the update
       };
       res.json({
-        status: STATUS_CODES.SUCCESS,
+        status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.auth.editUser.profileUpdated"),
         data: updatedUser,
         error: null,
@@ -297,7 +300,7 @@ module.exports = {
     } catch (error) {
       console.error("Error updating profile:", error);
       res.json({
-        status: STATUS_CODES.SERVER_ERROR,
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
         error: error.message,
