@@ -4,7 +4,12 @@ const i18n = require("../../../../config/i18n");
 const { HTTP_STATUS_CODES } = require("../../../../config/constants");
 const { VALIDATION_RULES } = require("../../../../config/validationRules");
 const sequelize = require("../../../../config/db");
-const { MasterCity, MasterCityTrans } = require("../../../../models");
+const {
+  MasterCity,
+  MasterCityTrans,
+  Account,
+  User,
+} = require("../../../../models");
 const VALIDATOR = require("validatorjs");
 
 module.exports = {
@@ -12,10 +17,11 @@ module.exports = {
     try {
       const adminId = req.admin.id;
 
-      let { cities } = req.body;
+      let { countryId, translation } = req.body;
 
       const validation = new VALIDATOR(req.body, {
-        cities: VALIDATION_RULES.CITY.cities,
+        countryId: VALIDATION_RULES.COUNTRY.masterCountryId,
+        translation: VALIDATION_RULES.CITY.translation,
       });
 
       if (validation.fails()) {
@@ -27,28 +33,28 @@ module.exports = {
         });
       }
 
-      for (let i = 0; i < cities.length; i++) {
+      for (let i = 0; i < translation.length; i++) {
         const query = `
         SELECT 
         mct.id AS id,
-        mc.country_id AS countryId
+        mc.country_id 
 
         FROM master_city AS mc
-        JOIN master_city_trans AS mct
+        LEFT JOIN master_city_trans AS mct
 
         On mc.id = mct.master_city_id
         
         WHERE mc.is_deleted = false
         AND mc.country_id = :countryId
-        AND mct.lang = :lang
+        AND LOWER(mct.lang) = LOWER(:lang) 
         AND LOWER(mct.name) = LOWER(:name);
         `;
 
         const existingCity = await sequelize.query(query, {
           replacements: {
-            countryId: cities[i].countryId,
-            name: cities[i].name,
-            lang: cities[i].lang,
+            countryId: countryId,
+            name: translation[i].name,
+            lang: translation[i].lang,
           },
           type: sequelize.QueryTypes.SELECT,
         });
@@ -57,7 +63,7 @@ module.exports = {
         if (existingCity.length > 0) {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
-            message: `city '${cities[i].name}' already exists in '${cities[i].lang}'`,
+            message: `city '${[i].name}' already exists in 'city${[i].lang}'`,
             data: null,
             error: null,
           });
@@ -65,39 +71,42 @@ module.exports = {
       }
 
       // Generate UUID for MasterCity
-      const masterCityId = uuidv4();
+      const mastercityId = uuidv4();
 
       // // Insert Translations Using `bulkCreate`
       let City_trans = [];
-      for (let i = 0; i < cities.length; i++) {
+      for (let i = 0; i < translation.length; i++) {
         City_trans.push({
-          masterCityId: masterCityId,
-          name: cities[i].name,
-          lang: cities[i].lang,
+          masterCityId: mastercityId,
+          name: translation[i].name,
+          lang: translation[i].lang,
           createdAt: Math.floor(Date.now() / 1000),
           createdBy: adminId,
         });
       }
+      console.log("City_trans: ", City_trans);
       // // // Create master-category || cat_id put in master category table
       const City = await MasterCity.create({
-        id: masterCityId,
-        countryId: cities[0].countryId,
+        id: mastercityId,
+        countryId: countryId,
         createdAt: Math.floor(Date.now() / 1000),
         createdBy: adminId,
       });
 
       // // // Create master-category-trans
-      await MasterCityTrans.bulkCreate(City_trans);
+      await MasterCityTrans.bulkCreate(City_trans, {
+        validate: true,
+      });
 
-      return res.json({
+      return res.status(HTTP_STATUS_CODES.CREATED).json({
         status: HTTP_STATUS_CODES.CREATED,
         message: i18n.__("api.cities.addsuccess"),
-        data: { masterCityId },
+        data: { mastercityId },
         error: null,
       });
     } catch (error) {
       console.error(error);
-      return res.json({
+      return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
         data: null,
@@ -110,84 +119,122 @@ module.exports = {
     try {
       const adminId = req.admin.id;
 
-      let cities = req.body.data;
+      const { mastercityId, translation } = req.body;
 
-      // Validate request payload
-      if (!Array.isArray(cities) || cities.length === 0) {
-        return res.json({
+      const validation = new VALIDATOR(req.body, {
+        mastercityId: VALIDATION_RULES.CITY.masterCityId,
+        translation: VALIDATION_RULES.CITY.translation,
+      });
+
+      if (validation.fails()) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.cities.invalidInput"),
-          data: null,
-          error: null,
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
+      // Find subcategory by ID
+      const city = await MasterCity.findOne({
+        where: { id: mastercityId, isDeleted: false },
+        attributes: ["id"],
+      });
 
-      let updateData = [];
+      if (!city) {
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.subcategories.notFound"),
+          data: "",
+          error: "",
+        });
+      }
+      // Check if a subcategory with the same name and lang already exists (excluding the current subcategory)
+      for (let i = 0; i < translation.length; i++) {
+        const duplicateCity = await MasterCityTrans.findOne({
+          where: {
+            isDeleted: false,
+            name: translation[i].name.toLowerCase(),
+            lang: translation[i].lang.toLowerCase(),
+            id: { [Op.ne]: mastercityId },
+          },
+          attributes: ["id"],
+        });
 
-      for (let i = 0; i < cities.length; i++) {
-        const { id, name, lang } = cities[i];
-
-        if (!id || !name || !lang) {
+        if (duplicateCity) {
           return res.json({
             status: HTTP_STATUS_CODES.BAD_REQUEST,
-            message: "ID, name, and lang are required",
-            data: null,
-            error: null,
+            message: "A City with the same name and language already exists",
+            data: "",
+            error: "",
           });
         }
 
-        updateData.push({ id, name: name.toLowerCase(), lang });
+        const query = `
+        SELECT id,
+        master_city_id
+        FROM master_city_trans
+        WHERE master_city_id = :mastercityId
+        AND is_deleted = false
+   
+        `;
+
+        const existingsubCity = await sequelize.query(query, {
+          replacements: {
+            mastercityId: mastercityId,
+          },
+          type: sequelize.QueryTypes.SELECT, // Ensure SELECT query type
+        });
+
+        console.log("existingsubCity: ", existingsubCity);
+
+        if (existingsubCity.length > 0) {
+          // Ensure there are records to delete
+          const idsToDelete = existingsubCity.map((city) => city.id);
+          await MasterCityTrans.destroy({
+            where: {
+              id: idsToDelete,
+              isDeleted: false,
+            },
+          });
+
+          console.log(`Deleted city for mastercityId: ${mastercityId}`);
+        } else {
+          console.log(
+            `No subCategory found to delete for masterSubcategoryId: ${mastercityId}`
+          );
+        }
       }
 
-      // Check if the cities exist
-      const existingCities = await MasterCityTrans.findAll({
-        where: {
-          isDeleted: false,
-          id: { [Op.in]: updateData.map((c) => c.id) },
-        },
-      });
+      let cityTrans = [];
+      for (let i = 0; i < translation.length; i++) {
+        const { name, lang } = translation[i];
 
-      if (!existingCities || existingCities.length === 0) {
-        return res.json({
-          status: HTTP_STATUS_CODES.NOT_FOUND,
-          message: "City not found",
-          data: null,
-          error: null,
+        cityTrans.push({
+          id: uuidv4(),
+          masterCityId: mastercityId,
+          name: translation[i].name.toLowerCase(),
+          lang: translation[i].lang.toLowerCase(),
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
         });
       }
+      // Create master-category || cat_id put in master category table
 
-      // Check for duplicate city names in the same language
-      const duplicateCity = await MasterCityTrans.findOne({
-        where: {
-          isDeleted: false,
-          [Op.or]: updateData.map((c) => ({
-            name: c.name,
-            lang: c.lang,
-          })),
-          id: { [Op.notIn]: updateData.map((c) => c.id) }, // Ensure it's not checking itself
-          attributes: ["id", "master_city_id", "name", "lang"],
+      await MasterCity.update(
+        {
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
         },
+        { where: { id: mastercityId } }
+      );
+
+      await MasterCityTrans.bulkCreate(cityTrans, {
+        validate: true,
       });
-      if (duplicateCity) {
-        return res.json({
-          status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: "A city with the same name and language already exists",
-          data: null,
-          error: null,
-        });
-      }
-
-      // Perform the update
-      for (let i = 0; i < updateData.length; i++) {
-        const { id, name, lang } = updateData[i];
-
-        await MasterCityTrans.update({ name, lang }, { where: { id } });
-      }
-
-      return res.json({
+      return res.status(HTTP_STATUS_CODES.OK).json({
         status: HTTP_STATUS_CODES.OK,
-        message: i18n.__("api.cities.update OK"),
-        data: null,
+        message: i18n.__("api.subcategories.update OK"),
+        data: mastercityId,
         error: null,
       });
     } catch (error) {
@@ -204,6 +251,7 @@ module.exports = {
   deleteCity: async (req, res) => {
     try {
       const { cityId } = req.params; // Ex
+      console.log("cityId: ", cityId);
       const adminId = req.admin.id;
 
       if (!cityId) {
@@ -217,7 +265,7 @@ module.exports = {
 
       // Find city by ID
       const city = await MasterCityTrans.findOne({
-        where: { id: cityId, isDeleted: false },
+        where: { masterCityId: cityId, isDeleted: false },
         attributes: ["id", "master_city_id", "name", "lang"],
       });
 
@@ -231,12 +279,12 @@ module.exports = {
       }
 
       // Check if the city is assigned to any account (if applicable)
-      const assignedAccounts = await Account.findOne({
+      const assignedtoUser = await User.findOne({
         where: { cityId: city.id },
         attributes: ["id"],
       });
 
-      if (assignedAccounts) {
+      if (assignedtoUser) {
         return res.json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.cities.assignedToAccount"),
@@ -245,9 +293,14 @@ module.exports = {
         });
       }
 
-      await MasterCityTrans.update(
-        { isDeleted: true, deletedA: Math.floor(Date.now() / 1000) },
+      await MasterCity.update(
+        { isDeleted: true, deletedAt: Math.floor(Date.now() / 1000) },
         { where: { id: cityId } }
+      );
+
+      await MasterCityTrans.update(
+        { isDeleted: true, deletedAt: Math.floor(Date.now() / 1000) },
+        { where: { masterCityId: cityId } }
       );
 
       return res.json({

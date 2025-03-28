@@ -1,6 +1,7 @@
 const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const sequelize = require("../../../../config/db");
+const { Sequelize } = require("sequelize");
 const i18n = require("../../../../config/i18n");
 const { HTTP_STATUS_CODES } = require("../../../../config/constants");
 const { VALIDATION_RULES } = require("../../../../config/validationRules");
@@ -9,6 +10,7 @@ const {
   MasterCountry,
   MasterCity,
   MasterCityTrans,
+  Account,
 } = require("../../../../models");
 
 const VALIDATOR = require("validatorjs");
@@ -18,75 +20,76 @@ module.exports = {
     try {
       const adminId = req.admin.id;
 
-      let { countries } = req.body;
-      console.log("countries: ", countries);
+      let { translation } = req.body;
 
       const validation = new VALIDATOR(req.body, {
-        countries: VALIDATION_RULES.COUNTRY.countries, // Check if categories is a valid array
+        translation: VALIDATION_RULES.COUNTRY.translation, // Check if categories is a valid array
       });
 
       if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
-          data: null,
+          data: "",
           error: validation.errors.all(),
         });
       }
 
-      for (let i = 0; i < countries.length; i++) {
+      for (let i = 0; i < translation.length; i++) {
         const query = `
           SELECT id
           FROM master_country_trans
           WHERE is_deleted = false
-          AND lang = :lang
+          AND LOWER(lang) = LOWER(:lang)
           AND LOWER(name) = LOWER(:name)
         `;
 
         const existingCountry = await sequelize.query(query, {
           replacements: {
-            name: countries[i].name,
-            lang: countries[i].lang,
+            name: translation[i].name,
+            lang: translation[i].lang,
           },
           type: sequelize.QueryTypes.SELECT,
         });
 
-        // If a category exists, return a conflict response
+        // If a country exists, return a conflict response
         if (existingCountry.length > 0) {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
-            message: `Country '${countries[i].name}' already exists in '${categories[i].lang}'`,
+            message: `Country '${translation[i].name}' already exists in '${translation[i].lang}'`,
             data: null,
             error: null,
           });
         }
       }
 
-      //   // Generate UUID for MasterCategory
+      //   // Generate UUID for Mastercountry
       const masterCountryId = uuidv4();
 
       // Prepare data for bulk insert
       let country_trans = [];
-      for (let i = 0; i < countries.length; i++) {
-        const { name, lang } = countries[i];
+      for (let i = 0; i < translation.length; i++) {
+        const { name, lang } = translation[i];
 
         country_trans.push({
           masterCountryId,
-          name: countries[i].name,
-          lang: countries[i].lang,
+          name: translation[i].name,
+          lang: translation[i].lang,
           createdAt: Math.floor(Date.now() / 1000),
           createdBy: adminId,
         });
       }
-      // Create master-category || cat_id put in master category table
+      // Create master- country|| cat_id put in master country table
       const country = await MasterCountry.create({
         id: masterCountryId,
         createdAt: Math.floor(Date.now() / 1000),
         createdBy: adminId,
       });
 
-      //   // Create master-category-trans
-      await MasterCountryTrans.bulkCreate(country_trans);
+      //   // Create master-country-trans
+      await MasterCountryTrans.bulkCreate(country_trans, {
+        validate: true,
+      });
 
       return res.status(HTTP_STATUS_CODES.CREATED).json({
         status: HTTP_STATUS_CODES.CREATED,
@@ -105,86 +108,125 @@ module.exports = {
     }
   },
   updateCountry: async (req, res) => {
-    try {    const adminId = req.admin.id;
-      let countries = req.body;
+    try {
+      const adminId = req.admin.id;
+      const { countryId, translation } = req.body;
 
-      // Validate request payload
-      if (!Array.isArray(countries) || countries.length === 0) {
+      const validation = new VALIDATOR(req.body, {
+        countryId: VALIDATION_RULES.COUNTRY.masterCountryId,
+        translation: VALIDATION_RULES.COUNTRY.translation,
+      });
+
+      if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.countries.invalidInput"),
-          data: null,
-          error: "Invalid input: an array of country objects is required.",
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
 
-      let updateData = [];
+      // Find country by ID
+      const country = await MasterCountry.findOne({
+        where: { id: countryId, isDeleted: false },
+        attributes: ["id"],
+      });
 
-      for (let i = 0; i < countries.length; i++) {
-        const { id, name, lang } = countries[i];
+      // console.log("country: ", country);
+      if (!country) {
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.categories.notFound"),
+          data: "",
+          error: "",
+        });
+      }
 
-        if (!id || !name || !lang) {
-          return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+      // Check if a country with the same name and lang already exists (excluding the current country)
+      for (let i = 0; i < translation.length; i++) {
+        const duplicateCountry = await MasterCountryTrans.findOne({
+          where: {
+            isDeleted: false,
+            name: translation[i].name.toLowerCase(),
+            lang: translation[i].lang.toLowerCase(),
+            id: { [Op.ne]: countryId },
+          },
+          attributes: ["id"],
+        });
+
+        if (duplicateCountry) {
+          return res.json({
             status: HTTP_STATUS_CODES.BAD_REQUEST,
-            message: "ID, name, and lang are required",
-            data: null,
-            error: "Missing required fields in input.",
+            message: "A country with the same name and language already exists",
+            data: "",
+            error: "",
           });
         }
 
-        updateData.push({ id, name: name.toLowerCase(), lang });
+        const query = `
+        SELECT id,
+        master_country_id
+        FROM master_country_trans
+        WHERE master_country_id = :countryId
+        AND is_deleted = false
+   
+        `;
+
+        const existingCountry = await sequelize.query(query, {
+          replacements: {
+            countryId: countryId,
+          },
+          type: sequelize.QueryTypes.SELECT, // Ensure SELECT query type
+        });
+
+        console.log("existingCountry: ", existingCountry);
+
+        if (existingCountry.length > 0) {
+          // Ensure there are records to delete
+          const idsToDelete = existingCountry.map((cat) => cat.id);
+          await MasterCountryTrans.destroy({
+            where: {
+              id: idsToDelete,
+              isDeleted: false,
+            },
+          });
+
+          console.log(`Deleted countrty for masterCountryId: ${countryId}`);
+        } else {
+          console.log(
+            `No countrty found to delete for masterCountryId: ${countryId}`
+          );
+        }
       }
 
-      // Check if the countries exist
-      const existingCountries = await MasterCountryTrans.findAll({
-        where: {
-          isDeleted: false,
-          id: { [Op.in]: updateData.map((c) => c.id) },
-        },
-        attributes: ["id", "master_country_id", "name", "lang"],
-      });
+      let countrty_trans = [];
+      for (let i = 0; i < translation.length; i++) {
+        const { name, lang } = translation[i];
 
-      if (!existingCountries || existingCountries.length === 0) {
-        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
-          status: HTTP_STATUS_CODES.NOT_FOUND,
-          message: "Country not found",
-          data: null,
-          error: "No matching country records found for update.",
+        countrty_trans.push({
+          id: uuidv4(),
+          masterCountryId: countryId,
+          name: translation[i].name.toLowerCase(),
+          lang: translation[i].lang.toLowerCase(),
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
         });
       }
 
-      // Check for duplicate country names in the same language
-      const duplicateCountry = await MasterCountryTrans.findOne({
-        where: {
-          isDeleted: false,
-          [Op.or]: updateData.map((c) => ({
-            name: c.name,
-            lang: c.lang,
-          })),
-          id: { [Op.notIn]: updateData.map((c) => c.id) }, // Ensure it's not checking itself
+      await MasterCountry.update(
+        {
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
         },
-        attributes: ["id", "master_country_id", "name", "lang"],
-      });
+        { where: { id: countryId } }
+      );
 
-      if (duplicateCountry) {
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-          status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: "A country with the same name and language already exists",
-          data: null,
-          error: "Duplicate country detected in the same language.",
-        });
-      }
-      // Perform the update
-      for (let i = 0; i < updateData.length; i++) {
-        const { id, name, lang } = updateData[i];
-
-        await MasterCountryTrans.update({ name, lang }, { where: { id } });
-      }
+      await MasterCountryTrans.bulkCreate(countrty_trans, { validate: true });
 
       return res.status(HTTP_STATUS_CODES.OK).json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.countries.update OK"),
-        data: updateData,
+        data: countrty_trans,
         error: null,
       });
     } catch (error) {
@@ -198,58 +240,91 @@ module.exports = {
     }
   },
   deleteCountry: async (req, res) => {
-    try {    const adminId = req.admin.id;
+    try {
+      const adminId = req.admin.id;
       const { countryId } = req.params;
 
-      // Validate input
-      if (!countryId) {
+      const validation = new VALIDATOR(req.params, {
+        countryId: VALIDATION_RULES.COUNTRY.masterCountryId,
+      });
+
+      if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: "Country ID is required",
-          data: null,
-          error: "Missing country ID in request parameters.",
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
-      // Find country by ID
+      // Find category by ID
       const country = await MasterCountry.findOne({
         where: { id: countryId, isDeleted: false },
         attributes: ["id"],
       });
 
-      console.log("Country found:", country);
-
       if (!country) {
-        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+        return res.json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
-          message: "Country not found or already deleted",
-          data: null,
-          error: "No active country record found for deletion.",
+          message: i18n.__("api.countries.notFound"),
+          data: "",
+          error: "",
         });
       }
-
-      // Check if the country is assigned to any account
-      const assignedAccounts = await Account.findOne({
-        where: { countryId: countryId },
+      const countryInAccount = await Account.findOne({
+        where: { id: countryId, isDeleted: false },
         attributes: ["id"],
       });
 
-      if (assignedAccounts) {
+      if (countryInAccount) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: "Cannot delete. Country is linked to an account",
+          message: "country exists in Account, cannot proceed.",
           data: null,
-          error: "Country is currently assigned to an account.",
+          error: null,
         });
       }
-      // Soft delete the country (recommended approach)
+
+      //find for subcategory
+
+      const query = `
+          SELECT 
+          mc.id AS id
+          FROM master_city AS mc
+          WHERE is_deleted = false
+          AND mc.country_id =:countryId
+          `;
+
+      const city = await sequelize.query(query, {
+        replacements: { countryId: countryId },
+        type: sequelize.QueryTypes.SELECT,
+      });
+
+      if (!city.length) {
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: "No cities found for this countries.",
+          data: null,
+          error: null,
+        });
+      }
+
+      // **Update MasterCategory**
       await MasterCountry.update(
-        { isDeleted: true, deletedAt: Math.floor(Date.now() / 1000) },
+        {
+          isDeleted: true,
+          deletedAt: Math.floor(Date.now() / 1000),
+          deletedBy: adminId,
+        },
         { where: { id: countryId } }
       );
 
-      // Soft delete translations
+      // **Update MasterCategoryTrans**
       await MasterCountryTrans.update(
-        { isDeleted: true, deletedAt: Math.floor(Date.now() / 1000) },
+        {
+          isDeleted: true,
+          deletedAt: Math.floor(Date.now() / 1000),
+          deletedBy: adminId,
+        },
         { where: { master_country_id: countryId } }
       );
 
@@ -269,8 +344,10 @@ module.exports = {
       });
     }
   },
+  //not working
   listingCountriesWithCities: async (req, res) => {
-    try {    const adminId = req.admin.id;
+    try {
+      const adminId = req.admin.id;
       const search = req.query.q; // Search query
 
       // Define base SQL query
@@ -279,21 +356,26 @@ module.exports = {
         mc.id AS country_id,
         mct.name AS country_name,
         mct.lang AS country_lang,
-        mc."isActive" AS country_active,
-        city.id AS city_id,
-        cityt.name AS city_name,
-        cityt.lang AS city_lang,
-        city."isActive" AS city_active
-      FROM master_country mc
-      JOIN master_country_trans mct ON mc.id = mct.master_country_id
-      LEFT JOIN master_city city ON mc.id = city.countryId AND city."isDeleted" = false
-      LEFT JOIN master_city_trans cityt ON city.id = cityt.master_city_id
-      WHERE mc."isDeleted" = false
+        mc.is_active AS country_active,
+        mcity.id AS city_id,
+        mcityt.name AS city_name,
+        mcityt.lang AS city_lang,
+        mcity.is_active AS city_active
+
+      FROM master_country AS mc
+      JOIN master_country_trans AS mct 
+        ON mc.id = mct.master_country_id
+      LEFT JOIN master_city AS mcity
+        ON mc.id = mcity.country_id 
+        AND mcity.is_deleted = false
+      LEFT JOIN master_city_trans AS mcityt
+       ON mcityt.master_city_id = mcityt.id
+        WHERE mcityt.is_deleted = false
     `;
 
       // If search query is provided, filter countries by name
       if (search) {
-        rawQuery += ` AND mct.name ILIKE :searchQuery `;
+        rawQuery += ` AND mct.name ILIKE :search `;
       }
 
       rawQuery += ` ORDER BY mc.created_at DESC `;

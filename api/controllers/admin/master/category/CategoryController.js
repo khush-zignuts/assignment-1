@@ -5,6 +5,7 @@ const {
   MasterCategory,
   MasterSubcategoryTrans,
   MasterSubcategory,
+  Account,
 } = require("../../../../models");
 const { Sequelize, Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
@@ -13,45 +14,40 @@ const { HTTP_STATUS_CODES } = require("../../../../config/constants");
 const { VALIDATION_RULES } = require("../../../../config/validationRules");
 
 const VALIDATOR = require("validatorjs");
-const {
-  updatedBy,
-  updatedAt,
-  deletedBy,
-} = require("../../../../models/CommonField");
 
 module.exports = {
   addCategory: async (req, res) => {
     try {
       const adminId = req.admin.id;
 
-      let { categories } = req.body;
+      const { translation } = req.body;
 
       const validation = new VALIDATOR(req.body, {
-        categories: VALIDATION_RULES.CATEGORY.categories, // Check if categories is a valid array
+        translation: VALIDATION_RULES.CATEGORY.translation, // Check if categories is a valid array
       });
 
       if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
-          data: null,
+          data: "",
           error: validation.errors.all(),
         });
       }
 
-      for (let i = 0; i < categories.length; i++) {
+      for (let i = 0; i < translation.length; i++) {
         const query = `
           SELECT id
           FROM master_category_trans
           WHERE is_deleted = false
-          AND lang = :lang
+          AND LOWER(lang) = LOWER(:lang)
           AND LOWER(name) = LOWER(:name)
         `;
 
         const existingCategory = await sequelize.query(query, {
           replacements: {
-            name: categories[i].name,
-            lang: categories[i].lang,
+            name: translation[i].name,
+            lang: translation[i].lang,
           },
           type: sequelize.QueryTypes.SELECT,
         });
@@ -60,7 +56,7 @@ module.exports = {
         if (existingCategory.length > 0) {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
-            message: `Category '${categories[i].name}' already exists in '${categories[i].lang}'`,
+            message: `Category '${translation[i].name}' already exists in '${translation[i].lang}'`,
             data: null,
             error: null,
           });
@@ -72,13 +68,13 @@ module.exports = {
 
       // // Prepare data for bulk insert
       let category_trans = [];
-      for (let i = 0; i < categories.length; i++) {
-        const { name, lang } = categories[i];
+      for (let i = 0; i < translation.length; i++) {
+        const { name, lang } = translation[i];
 
         category_trans.push({
           masterCategoryId,
-          name: categories[i].name,
-          lang: categories[i].lang,
+          name: translation[i].name,
+          lang: translation[i].lang,
           createdAt: Math.floor(Date.now() / 1000),
           createdBy: adminId,
         });
@@ -94,18 +90,18 @@ module.exports = {
       // Create master-category-trans
       await MasterCategoryTrans.bulkCreate(category_trans, { validate: true });
 
-      return res.json({
+      return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.CREATED,
         message: i18n.__("api.categories.addSuccess"),
         data: { masterCategoryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error adding category:", error);
-      return res.json({
+      return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message,
       });
     }
@@ -114,18 +110,18 @@ module.exports = {
   updateCategory: async (req, res) => {
     try {
       const adminId = req.admin.id;
-      const { categoryId, categories } = req.body;
+      const { categoryId, translation } = req.body;
 
       const validation = new VALIDATOR(req.body, {
         categoryId: VALIDATION_RULES.CATEGORY.masterCategoryId,
-        categories: VALIDATION_RULES.CATEGORY.categories,
+        translation: VALIDATION_RULES.CATEGORY.translation,
       });
 
       if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
-          data: null,
+          data: "",
           error: validation.errors.all(),
         });
       }
@@ -136,22 +132,23 @@ module.exports = {
         attributes: ["id"],
       });
 
+      // console.log("category: ", category);
       if (!category) {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.categories.notFound"),
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
       // Check if a category with the same name and lang already exists (excluding the current category)
-      for (let i = 0; i < categories.length; i++) {
+      for (let i = 0; i < translation.length; i++) {
         const duplicateCategory = await MasterCategoryTrans.findOne({
           where: {
             isDeleted: false,
-            name: categories[i].name.toLowerCase(),
-            lang: categories[i].lang,
+            name: translation[i].name.toLowerCase(),
+            lang: translation[i].lang.toLowerCase(),
             id: { [Op.ne]: categoryId },
           },
           attributes: ["id"],
@@ -162,53 +159,108 @@ module.exports = {
             status: HTTP_STATUS_CODES.BAD_REQUEST,
             message:
               "A category with the same name and language already exists",
-            data: null,
-            error: null,
+            data: "",
+            error: "",
           });
+        }
+
+        const query = `
+        SELECT id,
+        master_category_id
+        FROM master_category_trans
+        WHERE master_category_id = :categoryId
+        AND is_deleted = false
+   
+        `;
+
+        const existingCategory = await sequelize.query(query, {
+          replacements: {
+            categoryId: categoryId,
+          },
+          type: sequelize.QueryTypes.SELECT, // Ensure SELECT query type
+        });
+
+        console.log("existingCategory: ", existingCategory);
+
+        if (existingCategory.length > 0) {
+          // Ensure there are records to delete
+          const idsToDelete = existingCategory.map((cat) => cat.id);
+          await MasterCategoryTrans.destroy({
+            where: {
+              id: idsToDelete,
+              isDeleted: false,
+            },
+          });
+
+          console.log(`Deleted categories for masterCategoryId: ${categoryId}`);
+        } else {
+          console.log(
+            `No categories found to delete for masterCategoryId: ${categoryId}`
+          );
         }
       }
 
+      // Find and delete the category
+      // const categoryToDelete = await MasterCategoryTrans.findAll({
+      //   where: { masterCategoryId: categoryId, isDeleted: false },
+      //   attributes: ["id", "master_category_id", "name"],
+      // });
+
+      // if (categoryToDelete.length > 0) {
+      //   // Ensure there are records to delete
+      //   await MasterCategoryTrans.destroy({
+      //     where: {
+      //       id: categoryToDelete.map((cat) => cat.id), // Extract IDs
+      //       isDeleted: false,
+      //     },
+      //   });
+
+      //   console.log(`Deleted categories for masterCategoryId: ${categoryId}`);
+      // } else {
+      //   console.log(
+      //     `No categories found to delete for masterCategoryId: ${categoryId}`
+      //   );
+      // }
+
       // // Prepare data for bulk insert
+
       let category_trans = [];
-      for (let i = 0; i < categories.length; i++) {
-        const { name, lang } = categories[i];
+      for (let i = 0; i < translation.length; i++) {
+        const { name, lang } = translation[i];
 
         category_trans.push({
           id: uuidv4(),
           masterCategoryId: categoryId,
-          name: categories[i].name,
-          lang: categories[i].lang,
+          name: translation[i].name.toLowerCase(),
+          lang: translation[i].lang.toLowerCase(),
           updatedAt: Math.floor(Date.now() / 1000),
           updatedBy: adminId,
         });
       }
       // Create master-category || cat_id put in master category table
-      //update --> where ?
-      // const Category = await MasterCategory.create({
-      //   updatedAt: Math.floor(Date.now() / 1000),
-      //   updatedBy: adminId,
-      // });
 
-      //update isdeleted true category which get from id
-      await MasterCategoryTrans.update(
-        { isDeleted: true, updatedAt: Math.floor(Date.now() / 1000) },
+      await MasterCategory.update(
+        {
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
+        },
         { where: { id: categoryId } }
       );
 
-      await MasterCategoryTrans.bulkCreate(category_trans);
+      await MasterCategoryTrans.bulkCreate(category_trans, { validate: true });
 
       return res.json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.categories.update OK"),
         data: { categoryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error updating category:", error);
       return res.json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message,
       });
     }
@@ -218,15 +270,15 @@ module.exports = {
       const adminId = req.admin.id;
       const { categoryId } = req.params; // Extract categoryId from request params
 
-      const validation = new VALIDATOR(req.admin.id, {
-        categoryId: VALIDATION_RULES.CATEGORY.masterCategoryId, // Check if categories is a valid array
+      const validation = new VALIDATOR(req.params, {
+        categoryId: VALIDATION_RULES.CATEGORY.masterCategoryId,
       });
 
       if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
-          data: null,
+          data: "",
           error: validation.errors.all(),
         });
       }
@@ -241,10 +293,25 @@ module.exports = {
         return res.json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.categories.notFound"),
+          data: "",
+          error: "",
+        });
+      }
+      const categoryInAccount = await Account.findOne({
+        where: { id: categoryId, isDeleted: false },
+        attributes: ["id"],
+      });
+
+      if (categoryInAccount) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
+          message: "Category exists in Account, cannot proceed.",
           data: null,
           error: null,
         });
       }
+
+      //find for subcategory
 
       const query = `
           SELECT 
@@ -252,10 +319,10 @@ module.exports = {
           FROM master_subcategory AS ms
           WHERE is_deleted = false
           AND ms.category_id =:categoryId
-        `;
+          `;
 
       const subcategory = await sequelize.query(query, {
-        replacements: { categoryId },
+        replacements: { categoryId: categoryId },
         type: sequelize.QueryTypes.SELECT,
       });
 
@@ -268,22 +335,32 @@ module.exports = {
         });
       }
 
-      const subcategoryIds = subcategory.map((sub) => sub.id);
-
-      await MasterSubcategoryTrans.update(
+     
+      // **Update MasterCategory**
+      await MasterCategory.update(
         {
           isDeleted: true,
-          deletedAt: Math.floor(Date.now() / 1000), // Correct placement
+          deletedAt: Math.floor(Date.now() / 1000),
           deletedBy: adminId,
         },
-        { where: { master_subcategory_id: subcategoryIds } }
+        { where: { id: categoryId } }
+      );
+
+      // **Update MasterCategoryTrans**
+      await MasterCategoryTrans.update(
+        {
+          isDeleted: true,
+          deletedAt: Math.floor(Date.now() / 1000),
+          deletedBy: adminId,
+        },
+        { where: { master_category_id: categoryId } }
       );
 
       return res.json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.categories.deleted"),
         data: { categoryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error deleting category:", error);

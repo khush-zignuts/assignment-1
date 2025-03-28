@@ -11,7 +11,7 @@ const checkAdmin = require("../../../../middlewares/checkAdmin"); // Middleware 
 router.post("/add", checkAdmin, addSubcategory);
 
 //update category
-router.post("/update ", checkAdmin, updateSubcategory);
+router.post("/update", checkAdmin, updateSubcategory);
 
 //deletion of category
 // DELETE /api/subcategories/delete/:subCategoryId

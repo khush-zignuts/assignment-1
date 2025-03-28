@@ -14,6 +14,6 @@ router.post("/add", checkAdmin, addCity);
 router.post("/update", checkAdmin, updateCity);
 
 //deletion of City
-router.post("/delete", checkAdmin, deleteCity);
+router.delete("/delete/:cityId", checkAdmin, deleteCity);
 
 module.exports = router;

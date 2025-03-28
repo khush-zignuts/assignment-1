@@ -14,29 +14,28 @@ module.exports = {
   addSubcategory: async (req, res) => {
     try {
       const adminId = req.admin.id;
-      console.log("adminId: ", adminId);
-
-      let { subCategories } = req.body;
-      console.log("subCategories: ", subCategories);
+      let { categoryId, translation } = req.body;
 
       const validation = new VALIDATOR(req.body, {
-        subCategories: VALIDATION_RULES.SUBCATEGORY.subcategories,
+        categoryId: VALIDATION_RULES.CATEGORY.masterCategoryId,
+        translation: VALIDATION_RULES.SUBCATEGORY.translation,
       });
 
       if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
-          data: null,
+          data: "",
           error: validation.errors.all(),
         });
       }
 
-      for (let i = 0; i < subCategories.length; i++) {
+      console.log("categoryId: ", categoryId);
+      for (let i = 0; i < translation.length; i++) {
         const query = `
         SELECT 
         mst.id AS id,
-        ms.category_id AS categoryId
+        ms.category_id
 
         FROM master_subcategory AS ms
         LEFT JOIN master_subcategory_trans AS mst
@@ -45,24 +44,25 @@ module.exports = {
         
         WHERE ms.is_deleted = false
         AND ms.category_id = :categoryId
-        AND mst.lang = :lang
+        AND LOWER(mst.lang) = LOWER(:lang)
         AND LOWER(mst.name) = LOWER(:name);
         `;
 
         const existingsubCategory = await sequelize.query(query, {
           replacements: {
-            categoryId: subCategories[i].categoryId,
-            name: subCategories[i].name,
-            lang: subCategories[i].lang,
+            categoryId: categoryId,
+            name: translation[i].name,
+            lang: translation[i].lang,
           },
           type: sequelize.QueryTypes.SELECT,
         });
 
+        console.log("existingsubCategory: ", existingsubCategory);
         // If a category exists, return a conflict response
         if (existingsubCategory.length > 0) {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
-            message: `SubCategory '${subCategories[i].name}' already exists in '${subCategories[i].lang}'`,
+            message: `SubCategory '${translation[i].name}' already exists in '${translation[i].lang}'`,
             data: null,
             error: null,
           });
@@ -70,34 +70,36 @@ module.exports = {
       }
 
       // Generate UUID for Subcategory
-      const masterSubcategoryId = uuidv4();
+      const mastersubcategoryId = uuidv4();
 
       // // Insert Translations Using `bulkCreate`
       let subCategory_trans = [];
-      for (let i = 0; i < subCategories.length; i++) {
+      for (let i = 0; i < translation.length; i++) {
         subCategory_trans.push({
-          masterSubcategoryId: masterSubcategoryId,
-          name: subCategories[i].name,
-          lang: subCategories[i].lang,
+          masterSubcategoryId: mastersubcategoryId,
+          name: translation[i].name,
+          lang: translation[i].lang,
           createdAt: Math.floor(Date.now() / 1000),
           createdBy: adminId,
         });
       }
       // // Create master-Subcategory || cat_id put in master category table
       const subCategory = await MasterSubcategory.create({
-        id: masterSubcategoryId,
-        categoryId: subCategories[0].categoryId,
+        id: mastersubcategoryId,
+        categoryId: categoryId,
         createdAt: Math.floor(Date.now() / 1000),
         createdBy: adminId,
       });
 
       // Create master-category-trans
-      await MasterSubcategoryTrans.bulkCreate(subCategory_trans);
+      await MasterSubcategoryTrans.bulkCreate(subCategory_trans, {
+        validate: true,
+      });
 
       return res.status(HTTP_STATUS_CODES.CREATED).json({
         status: HTTP_STATUS_CODES.CREATED,
         message: i18n.__("api.subcategories.addsuccess"),
-        data: { masterSubcategoryId },
+        data: { mastersubcategoryId },
         error: null,
       });
     } catch (error) {
@@ -114,87 +116,128 @@ module.exports = {
   updateSubcategory: async (req, res) => {
     try {
       const adminId = req.admin.id;
-      let subcategories = req.body.data;
+      const { masterSubcategoryId, translation } = req.body;
 
-      // Validate request payload
-      if (!Array.isArray(subcategories) || subcategories.length === 0) {
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-          status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.subcategories.invalidInput"),
-          data: null,
-          error: "Invalid input format or empty data",
-        });
-      }
-      let updateData = [];
-
-      for (let i = 0; i < subcategories.length; i++) {
-        const { id, name, lang } = subcategories[i];
-
-        if (!id || !name || !lang) {
-          return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-            status: HTTP_STATUS_CODES.BAD_REQUEST,
-            message: "ID, name, and language are required",
-            data: null,
-            error: "Missing required fields",
-          });
-        }
-        updateData.push({ id, name: name.toLowerCase(), lang });
-      }
-
-      console.log("updateData: ", updateData);
-
-      // Check if the subcategories exist
-      const existingSubcategories = await MasterSubcategoryTrans.findAll({
-        where: {
-          isDeleted: false,
-          id: { [Op.in]: updateData.map((c) => c.id) },
-        },
-        attributes: ["id", "master_subcategory_id", "name", "lang"],
+      const validation = new VALIDATOR(req.body, {
+        masterSubcategoryId: VALIDATION_RULES.SUBCATEGORY.masterSubcategoryId,
+        translation: VALIDATION_RULES.CATEGORY.translation,
       });
 
-      if (!existingSubcategories || existingSubcategories.length === 0) {
-        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
-          status: HTTP_STATUS_CODES.NOT_FOUND,
-          message: "Subcategory not found",
-          data: null,
-          error: "No matching subcategory found for the given IDs",
+      if (validation.fails()) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
 
-      // Check for duplicate subcategory names in the same language
-      const duplicateSubcategory = await MasterSubcategoryTrans.findOne({
-        where: {
-          isDeleted: false,
-          [Op.or]: updateData.map((c) => ({
-            name: c.name,
-            lang: c.lang,
-          })),
-          id: { [Op.notIn]: updateData.map((c) => c.id) }, // Ensure it's not checking itself
-        },
+      // Find subcategory by ID
+      const subcategory = await MasterSubcategory.findOne({
+        where: { id: masterSubcategoryId, isDeleted: false },
         attributes: ["id"],
       });
+      console.log("subcategory: ", subcategory);
 
-      if (duplicateSubcategory) {
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-          status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message:
-            "A subcategory with the same name and language already exists",
-          data: null,
-          error: "Duplicate subcategory detected",
+      if (!subcategory) {
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.subcategories.notFound"),
+          data: "",
+          error: "",
         });
       }
 
-      // Perform the update
-      for (let i = 0; i < updateData.length; i++) {
-        const { id, name, lang } = updateData[i];
+      // Check if a subcategory with the same name and lang already exists (excluding the current subcategory)
+      for (let i = 0; i < translation.length; i++) {
+        const duplicateSubcategory = await MasterSubcategoryTrans.findOne({
+          where: {
+            isDeleted: false,
+            name: translation[i].name.toLowerCase(),
+            lang: translation[i].lang.toLowerCase(),
+            id: { [Op.ne]: masterSubcategoryId },
+          },
+          attributes: ["id"],
+        });
 
-        await MasterSubcategoryTrans.update({ name, lang }, { where: { id } });
+        if (duplicateSubcategory) {
+          return res.json({
+            status: HTTP_STATUS_CODES.BAD_REQUEST,
+            message:
+              "A category with the same name and language already exists",
+            data: "",
+            error: "",
+          });
+        }
+
+        const query = `
+        SELECT id,
+        master_subcategory_id
+        FROM master_subcategory_trans
+        WHERE master_subcategory_id = :masterSubcategoryId
+        AND is_deleted = false
+   
+        `;
+
+        const existingsubCategory = await sequelize.query(query, {
+          replacements: {
+            masterSubcategoryId: masterSubcategoryId,
+          },
+          type: sequelize.QueryTypes.SELECT, // Ensure SELECT query type
+        });
+
+        console.log("existingsubCategory: ", existingsubCategory);
+
+        if (existingsubCategory.length > 0) {
+          // Ensure there are records to delete
+          const idsToDelete = existingsubCategory.map((subcat) => subcat.id);
+          await MasterSubcategoryTrans.destroy({
+            where: {
+              id: idsToDelete,
+              isDeleted: false,
+            },
+          });
+
+          console.log(
+            `Deleted subCategory for masterSubcategoryId: ${masterSubcategoryId}`
+          );
+        } else {
+          console.log(
+            `No subCategory found to delete for masterSubcategoryId: ${masterSubcategoryId}`
+          );
+        }
       }
+      let subcategoryTrans = [];
+      for (let i = 0; i < translation.length; i++) {
+        const { name, lang } = translation[i];
+
+        subcategoryTrans.push({
+          id: uuidv4(),
+          masterSubcategoryId: masterSubcategoryId,
+          name: translation[i].name.toLowerCase(),
+          lang: translation[i].lang.toLowerCase(),
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
+        });
+      }
+      // Create master-category || cat_id put in master category table
+
+      await MasterSubcategory.update(
+        {
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
+        },
+        { where: { id: masterSubcategoryId } }
+      );
+
+      await MasterSubcategoryTrans.bulkCreate(subcategoryTrans, {
+        validate: true,
+      });
 
       return res.status(HTTP_STATUS_CODES.OK).json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.subcategories.update OK"),
-        data: updateData,
+        data: masterSubcategoryId,
         error: null,
       });
     } catch (error) {

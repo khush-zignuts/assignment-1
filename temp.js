@@ -11,61 +11,65 @@
 // npm install express sequelize pg pg-hstore bcrypt jsonwebtoken dotenv i18next i18next-fs-backend i18next-http-middleware cors body-parser
 
 // #Bhavnagar
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db"); // Import DB connection
-const CommonFields = require("./CommonField");
-const MasterCountry = require("./MasterCountry");
-const MasterCity = require("./MasterCity");
+const query = `
+          SELECT 
+          ms.id AS id
+          FROM master_subcategory AS ms
+          WHERE is_deleted = false
+          AND ms.category_id =:categoryId
+          `;
 
-const User = sequelize.define(
-  "user",
+const subcategory = await sequelize.query(query, {
+  replacements: { categoryId: categoryId },
+  type: sequelize.QueryTypes.SELECT,
+});
+
+if (!subcategory.length) {
+  return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+    status: HTTP_STATUS_CODES.NOT_FOUND,
+    message: "No subcategories found for this category.",
+    data: null,
+    error: null,
+  });
+}
+
+const subcategoryIds = subcategory.map((sub) => sub.id);
+
+const accountQuery = `
+          SELECT id FROM account AS a
+          WHERE is_deleted = false 
+          AND a.subcategory_id = :subcategoryIds
+      `;
+
+const subcategoryInAccount = await sequelize.query(accountQuery, {
+  replacements: { subcategoryIds },
+  type: sequelize.QueryTypes.SELECT,
+});
+
+if (subcategoryInAccount.length > 0) {
+  return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+    status: HTTP_STATUS_CODES.BAD_REQUEST,
+    message: "Some subcategories exist in an account, deletion not allowed.",
+    data: "",
+    error: "",
+  });
+}
+
+await MasterSubcategory.update(
   {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      allowNull: false,
-    },
-    name: {
-      type: DataTypes.STRING(30),
-      allowNull: false,
-    },
-
-    countryId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      field: "country_id",
-      references: {
-        model: MasterCountry,
-        key: "id",
-      },
-    },
-    cityId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      feild: "city_id",
-      references: {
-        model: MasterCity,
-        key: "id",
-      },
-    },
-    companyName: {
-      type: DataTypes.STRING(64),
-      allowNull: true,
-      required: false,
-      feild: "company_name",
-    },
-    accessToken: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    ...CommonFields,
+    isDeleted: true,
+    deletedAt: Math.floor(Date.now() / 1000),
+    deletedBy: adminId,
   },
-  {
-    tableName: "users",
-    freezeTableName: true,
-    timestamps: false,
-  }
+  { where: { id: subcategoryIds } }
 );
 
-module.exports = User;
+// **Update MasterSubcategoryTrans**
+await MasterSubcategoryTrans.update(
+  {
+    isDeleted: true,
+    deletedAt: Math.floor(Date.now() / 1000),
+    deletedBy: adminId,
+  },
+  { where: { subcategory_id: subcategoryIds } }
+);
