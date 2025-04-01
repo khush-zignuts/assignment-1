@@ -15,6 +15,7 @@ const CommonField = {
   isDeleted: {
     type: DataTypes.BOOLEAN,
     field: "is_deleted",
+    field: "is_deleted",
     defaultValue: false,
   },
   isActive: {
@@ -30,13 +31,20 @@ const CommonField = {
   updatedBy: {
     type: DataTypes.UUID,
     field: "updated_by",
+  updatedBy: {
+    type: DataTypes.UUID,
+    field: "updated_by",
     allowNull: true,
   },
+  deletedAt: {
   deletedAt: {
     type: DataTypes.DATE,
     field: "deleted_at",
     allowNull: true,
   },
+  deletedBy: {
+    type: DataTypes.UUID,
+    field: "deleted_by",
   deletedBy: {
     type: DataTypes.UUID,
     field: "deleted_by",

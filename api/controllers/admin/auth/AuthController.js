@@ -38,8 +38,8 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.UNAUTHORIZED).json({
           status: HTTP_STATUS_CODES.UNAUTHORIZED,
           message: i18n.__("api.auth.login.invalidCredentials"),
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -49,8 +49,8 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.UNAUTHORIZED).json({
           status: HTTP_STATUS_CODES.UNAUTHORIZED,
           message: i18n.__("api.auth.login.invalidCredentials"),
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -71,7 +71,7 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.auth.login.success"),
         data: { token },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Login error:", error);
