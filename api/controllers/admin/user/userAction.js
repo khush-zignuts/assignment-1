@@ -8,6 +8,8 @@ const sequelize = require("../../../../api/config/db");
 
 const MasterCity = require("../../../models/MasterCity");
 const MasterCountry = require("../../../models/MasterCountry");
+const MasterCategoryTrans = require("../../../models/MasterCategoryTrans");
+const MasterCountryTrans = require("../../../models/MasterCountryTrans");
 
 module.exports = {
   deleteUser: async (req, res) => {
@@ -85,38 +87,31 @@ module.exports = {
   getAll: async (req, res) => {
     try {
       //  filters
-      const { cityId, countryId, search } = req.query;
+      const { cityName, countryName, search } = req.query;
 
       //  pagination parameters
-      const page = parseInt(req.query.page, 10) || 1; // Default to page 1
-      const limit = parseInt(req.query.limit, 10) || 10; // Default to 10 records per page
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
       const offset = (page - 1) * limit;
 
-      //VALIDATION
-      const validation = new VALIDATOR(req.body, {
-        cityId: VALIDATION_RULES.CITY.cityId,
-        countryId: VALIDATION_RULES.COUNTRY.countryId,
-        search: VALIDATION_RULES.USER.name,
-      });
-
-      if (validation.fails()) {
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-          status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: "Validation failed.",
-          data: "",
-          error: validation.errors.all(),
-        });
-      }
+      const lang = req.headers.lang || "en";
+      //initialize localization
+      req.setLocale(lang);
 
       // Check existence
-      if (cityId) {
-        const cityExists = await MasterCity.findOne(
+      if (cityName) {
+        const cityExists = await MasterCategoryTrans.findOne(
           {
-            where: { id: cityId, isDeleted: false, isActive: true },
+            where: {
+              name: cityName,
+              isDeleted: false,
+              isActive: true,
+            },
           },
-          (attributes = ["id"])
+          (attributes = ["id", "name", "lang"])
         );
 
+        console.log("cityExists: ", cityExists);
         if (!cityExists) {
           return res.status(ResponseCodes.BAD_REQUEST).json({
             status: ResponseCodes.BAD_REQUEST,
@@ -128,13 +123,18 @@ module.exports = {
       }
 
       //  country
-      if (countryId) {
-        const countryExists = await MasterCountry.findOne(
+      if (countryName) {
+        const countryExists = await MasterCountryTrans.findOne(
           {
-            where: { id: countryId, isDeleted: false, isActive: true },
+            where: {
+              name: countryName,
+              isDeleted: false,
+              isActive: true,
+            },
           },
-          (attributes = ["id"])
+          (attributes = ["id", "name", "lang"])
         );
+        console.log("countryExists: ", countryExists);
         if (!countryExists) {
           return res.status(ResponseCodes.BAD_REQUEST).json({
             status: ResponseCodes.BAD_REQUEST,
@@ -153,9 +153,17 @@ module.exports = {
             isActive: true,
             [Op.or]: [
               { name: { [Op.iLike]: `%${search}%` } },
-              // { email: { [Op.iLike]: `%${search}%` } },
+              { email: { [Op.iLike]: `%${search}%` } }, // Uncomment if needed
             ],
           },
+          attributes: [
+            "id",
+            "name",
+            "email",
+            "countryId",
+            "cityId",
+            "companyName",
+          ],
         });
 
         if (!userExists) {
@@ -169,118 +177,132 @@ module.exports = {
       }
 
       // Base query with optional filters
-      const selectQuery = `
-            SELECT 
+      let selectQuery = `
+            SELECT DISTINCT
                   u.id AS userId,
                   u.name AS userName,
                   u.email AS userEmail,
                   mc.name AS cityName,
                   mct.name AS countryName,
-                  u.companyName,
+                  u.company_name,
+                  u.created_at,
                   COUNT(ac.id) AS totalAccounts
             FROM 
-                user AS u
+                  "user" AS u
               LEFT JOIN 
                   master_city_trans AS mc 
-                  ON u.city_id = mc.city_id
+                  ON u.city_id = mc.master_city_id
               LEFT JOIN 
                   master_country_trans AS mct 
-                  ON u.country_id = mct.country_id
+                  ON u.country_id = mct.master_country_id
               LEFT JOIN 
-                  account AS ac ON u.id = ac.user_id 
-                  
-            AND ac.is_deleted = false
+                  account AS ac 
+                  ON u.id = ac.user_id 
+                where 1=1
+            `;
+
+      // // Query to count total users matching filters
+      let countQuery = `
+            SELECT
+            COUNT(DISTINCT ac.id) AS totalRecords
+            FROM
+            "user" AS u
+            LEFT JOIN
+            account AS ac
+            ON u.id = ac.user_id
             WHERE 1=1
-            GROUP BY u.id, mc.name, mct.name
-            
-        `;
+            `;
 
       let whereConditionQuery = `
-      WHERE LOWER(name) = LOWER(:name)
-      AND "isDeleted" = false
-      AND "isActive" = true`;
+            AND u.is_deleted = false
+            AND u.is_active = true
+            `;
 
       let replacements = {};
 
-      if (cityId) {
-        selectQuery += ` AND LOWER(u.city) = LOWER(:city)`;
-        replacements.city = city;
-      }
+      if (cityName) {
+        selectQuery += ` 
+        AND LOWER(mc.name) = LOWER(:cityName) 
+        OR LOWER(mc.lang) LIKE LOWER(:lang )`;
 
-      if (countryId) {
-        rawQuery += ` AND LOWER(u.country) = LOWER(:country)`;
-        replacements.country = country;
+        countQuery += ` AND LOWER(mc.name) = LOWER(:cityName) 
+        OR LOWER(mc.lang) LIKE LOWER(:lang ) `;
+        replacements.cityName = cityName;
+        replacements.lang = lang;
+      }
+      // Apply country name filter
+      if (countryName) {
+        selectQuery += ` AND LOWER(mct.name) = LOWER(:countryName) OR LOWER(mct.lang) LIKE LOWER(:lang )`;
+        countQuery += ` AND LOWER(mct.name) = LOWER(:countryName) OR LOWER(mct.lang) LIKE LOWER(:lang )`;
+        replacements.countryName = countryName;
+        replacements.lang = lang;
       }
 
       if (search) {
-        rawQuery += ` AND (LOWER(u.name) LIKE LOWER(:search))`;
+        selectQuery += ` AND LOWER(u.name) LIKE LOWER(:search) 
+        OR LOWER(u.email) LIKE LOWER(:search)
+        `;
+
+        countQuery += ` AND LOWER(u.name) LIKE LOWER(:search)
+        OR LOWER(u.email) LIKE LOWER(:search)
+        `;
         replacements.search = `%${search}%`;
       }
 
-      const orderByClause = `ORDER BY "createdAt" DESC`;
+      let orderByClause = `ORDER BY u.id DESC`;
 
-      const limitOffsetClause = `LIMIT :limit OFFSET :offset;`;
+      let groupByClause = `GROUP BY u.id, mc.name, mct.name`;
+      let groupByClauseCount = `GROUP BY ac.id`;
+
+      let limitOffsetClause = `LIMIT :limit OFFSET :offset;`;
       replacements.limit = limit;
       replacements.offset = offset;
 
-      const query = `${selectQuery} ${whereConditionQuery} ${orderByClause} ${limitOffsetClause}`;
+      let query = `${selectQuery} ${whereConditionQuery}${groupByClause}  ${orderByClause} ${limitOffsetClause}`;
 
-      // // Query to count total users matching filters
-      // let countQuery = `
-      //   SELECT
-      //   COUNT(DISTINCT u.id) AS totalRecords
-      //   FROM
-      //   user AS u
-      //   LEFT JOIN
-      //   account AS ac
-      //   ON u.id = ac.user_id
-      //   AND ac.is_deleted = false
-      //   WHERE 1=1
-      //   `;
+      let count = `${countQuery} ${whereConditionQuery}${groupByClauseCount}`;
 
-      // if (city) countQuery += ` AND LOWER(u.city) = LOWER(:city)`;
-      // if (country) countQuery += ` AND LOWER(u.country) = LOWER(:country)`;
-      // if (search)
-      //   countQuery += ` AND (LOWER(u.name) LIKE LOWER(:search) OR LOWER(u.email) LIKE LOWER(:search))`;
-
-      // console.log("first");
       // // Execute queries
-      const usersData = await sequelize.query(rawQuery, {
+      const usersData = await sequelize.query(query, {
+        replacements,
+        type: Sequelize.QueryTypes.SELECT,
+      });
+      console.log("first");
+
+      const totalCountResult = await sequelize.query(count, {
         replacements,
         type: Sequelize.QueryTypes.SELECT,
       });
 
-      // const totalCountResult = await sequelize.query(countQuery, {
-      //   replacements,
-      //   type: Sequelize.QueryTypes.SELECT,
-      // });
+      console.log("totalCountResult: ", totalCountResult);
+      const totalRecords = parseInt(totalCountResult[0].totalrecords, 10);
 
-      // const totalRecords = parseInt(totalCountResult[0].totalRecords, 10);
-      // const totalPages = Math.ceil(totalRecords / limit);
+      console.log("totalRecords: ", totalRecords);
+      const totalPages = Math.ceil(totalRecords / limit);
 
-      // // Handle empty data scenario
-      // if (!usersData || usersData.length === 0) {
-      //   return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
-      //     status: HTTP_STATUS_CODES.NOT_FOUND,
-      //     message: "No users found.",
-      //     data: [],
-      //     pagination: {
-      //       currentPage: page,
-      //       totalPages,
-      //       totalRecords,
-      //     },
-      //     error: null,
-      //   });
-      // }
+      // Handle empty data scenario
+      if (!usersData || usersData.length === 0) {
+        return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: "No users found.",
+          data: [],
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalRecords,
+          },
+          error: null,
+        });
+      }
 
       return res.status(HTTP_STATUS_CODES.OK).json({
         status: HTTP_STATUS_CODES.OK,
         message: "Users retrieved successfully.",
         data: usersData,
         pagination: {
-          // currentPage: page,
-          // totalPages,
-          // totalRecords,
+          currentPage: page,
+          totalPages,
+          totalRecords,
         },
         error: null,
       });
