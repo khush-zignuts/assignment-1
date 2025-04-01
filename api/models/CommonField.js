@@ -28,15 +28,13 @@ const CommonField = {
     field: "updated_at",
     allowNull: true,
   },
-  updatedBy: {
-    type: DataTypes.UUID,
-    field: "updated_by",
+
   updatedBy: {
     type: DataTypes.UUID,
     field: "updated_by",
     allowNull: true,
   },
-  deletedAt: {
+
   deletedAt: {
     type: DataTypes.DATE,
     field: "deleted_at",
@@ -45,10 +43,11 @@ const CommonField = {
   deletedBy: {
     type: DataTypes.UUID,
     field: "deleted_by",
-  deletedBy: {
-    type: DataTypes.UUID,
-    field: "deleted_by",
-    allowNull: true,
+    deletedBy: {
+      type: DataTypes.UUID,
+      field: "deleted_by",
+      allowNull: true,
+    },
   },
 };
 

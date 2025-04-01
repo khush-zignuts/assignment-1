@@ -107,4 +107,5 @@ module.exports = {
   MasterCity,
   MasterCityTrans,
   Account,
+  AccountTrans,
 };

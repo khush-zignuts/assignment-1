@@ -3,12 +3,13 @@ module.exports = {
   VALIDATION_RULES: {
     ACCOUNT: {
       userId: "required|string",
+      nameTranslation: "required|array|min:1",
+      "nameTranslation.*.name": "required|string|min:3|max:128",
+      "nameTranslation.*.lang": "required|string|min: 2 |max:10",
       categoryId: "required|string",
       subcategoryId: "required|string",
-      description: "string|max:255|nullable",
-      Account_id: "required|string",
-      name: "required|string|min:1|max:128",
-      lang: "required|string|min:2|max:10",
+      description: "string|max:255",
+      accountId: "required|string",
     },
     ADMIN: {
       name: "required|string|min:2|max:30",

@@ -1,3 +1,5 @@
+const { v4: uuidv4 } = require("uuid");
+
 module.exports = {
   //? HTTP Status Codes
   HTTP_STATUS_CODES: {
@@ -14,4 +16,6 @@ module.exports = {
   TOKEN_EXPIRY: {
     ACCESS_TOKEN: "5d",
   },
+
+  uuid: uuidv4(),
 };

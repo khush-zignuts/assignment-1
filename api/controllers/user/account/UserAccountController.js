@@ -9,96 +9,57 @@ const {
   MasterCategory,
   MasterSubcategory,
   Account,
+  AccountTrans,
 } = require("../../../models");
-const AccountTrans = require("../../../models/AccountTrans");
 
-const validateRequest = (data, rules, res) => {
-  const validation = new Validator(data, rules);
-  if (validation.fails()) {
-    res
-      .status(HTTP_STATUS_CODES.BAD_REQUEST)
-      .json({ message: validation.errors.all() });
-    return false;
-  }
-  return true;
-};
+const VALIDATOR = require("validatorjs");
+
 module.exports = {
   addAccount: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.ACCOUNT, res)) return;
-      const { usersId, name, categoryId, subCategoryId, description } =
+      const userId = req.user.id;
+
+      const { nameTranslation, categoryId, subcategoryId, description } =
         req.body;
+      ``;
 
-      // Validate presence of userId
-      if (!usersId) {
-        return res.json({
-          status: 400,
-          message: "User ID is required.",
-          data: null,
-          error: "Missing userId in request body.",
-        });
-      }
+      const validation = new VALIDATOR(req.body, {
+        userId: VALIDATION_RULES.ACCOUNT.userId,
+        nameTranslation: VALIDATION_RULES.ACCOUNT.nameTranslation,
+        categoryId: VALIDATION_RULES.ACCOUNT.categoryId,
+        subcategoryId: VALIDATION_RULES.ACCOUNT.subcategoryId,
+        description: VALIDATION_RULES.ACCOUNT.description,
+      });
 
-      // Validate name array
-      if (!Array.isArray(name) || name.length === 0) {
-        return res.json({
-          status: 400,
-          message: "Name array is required and cannot be empty.",
-          data: null,
-          error: "Invalid name format.",
-        });
-      }
-
-      // // Validate each name entry
-      for (const i of name) {
-        if (!i.value || !i.lang) {
-          return res.json({
-            status: 400,
-            message:
-              "Each name entry must have both value and lang properties.",
-            data: null,
-            error: "Invalid name object format.",
-          });
-        }
-      }
-
-      // //   // Check if categoryId exists in MasterCategory
-      const categoryExists = await MasterCategory.findByPk(categoryId);
-      if (!categoryExists) {
-        return res.status(400).json({
-          status: 400,
-          message: "Invalid categoryId.",
-          data: null,
-          error: "Category not found.",
-        });
-      }
-
-      // // Check if subCategoryId exists in MasterSubcategory
-      const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
-      if (!subCategoryExists) {
-        return res.json({
-          status: 400,
-          message: "Invalid subCategoryId.",
-          data: null,
-          error: "Subcategory not found.",
+      if (validation.fails()) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
 
       //check first according to user id :
-      const existingAccount = await Account.findAll({
-        where: { userId: usersId },
-      });
-
-      // Check if an account already exists for this user
-      if (existingAccount.length > 0) {
-        // Define `existingAccountTrans` before using it
-        const existingAccountTrans = await AccountTrans.findAll({
-          where: {
-            id: existingAccount[0]?.id, // Use the first found account's userId
-            name: {
-              [Op.or]: name.map((s) => s.value),
-            },
+      for (let i = 0; i < nameTranslation.length; i++) {
+        const query = `
+      SELECT 
+           ac.user_id AS userId,
+           act.account_id AS accountId
+          FROM account AS ac
+          LEFT JOIN account_trans AS act ON ac.id = act.account_id
+          WHERE ac.is_deleted = false
+          AND ac.user_id = :userId
+          AND LOWER(act.lang) = LOWER(:lang)
+          AND LOWER(act.name) = LOWER(:name)
+      `;
+        const existingAccount = await sequelize.query(query, {
+          replacements: {
+            userId: userId,
+            name: nameTranslation[i].name,
+            lang: nameTranslation[i].lang,
           },
+          type: sequelize.QueryTypes.SELECT,
           attributes: [
             "id",
             "userId",
@@ -109,45 +70,77 @@ module.exports = {
           ],
         });
 
-        // If an account with the same name already exists, return an error
-        if (existingAccountTrans.length > 0) {
-          return res.status(409).json({
-            message:
-              "An account with the same name already exists for this user.",
+        if (existingAccount.length > 0) {
+          return res.status(HTTP_STATUS_CODES.CONFLICT).json({
+            status: HTTP_STATUS_CODES.CONFLICT,
+            message: `Account '${nameTranslation[i].name}' already exists in '${nameTranslation[i].lang}'`,
+            data: "",
+            error: "",
           });
         }
       }
 
-      // // Generate UUID for MasterCategory
-      const account_id = uuidv4();
-      console.log("Account_id: ", account_id);
-
-      // // Create new account
-      const newAccount = await Account.create({
-        id: account_id,
-        userId: usersId,
-        categoryId: categoryId,
-        subcategoryId: subCategoryId,
-        description,
+      // Check if categoryId exists in MasterCategory
+      const categoryExists = await MasterCategory.findOne({
+        where: { id: categoryId, isDeleted: false },
       });
 
-      let accountTransData = [];
-      for (let i = 0; i < name.length; i++) {
-        const { value, lang } = name[i];
-
-        accountTransData.push({
-          Account_id: account_id,
-          name: name[i].value,
-          lang: name[i].lang,
+      if (!categoryExists) {
+        return res.status(400).json({
+          status: 400,
+          message: "Invalid categoryId.",
+          data: null,
+          error: "Category not found.",
         });
       }
+
+      // Check if subCategoryId exists in MasterSubcategory
+      const subCategoryExists = await MasterSubcategory.findOne({
+        where: { id: subcategoryId, isDeleted: false },
+      });
+      // console.log("subCategoryExists: ", subCategoryExists);
+
+      if (!subCategoryExists) {
+        return res.status(400).json({
+          status: 400,
+          message: "Invalid subCategoryId.",
+          data: null,
+          error: "Subcategory not found.",
+        });
+      }
+      // // Generate UUID for MasterCategory
+      const accountId = uuidv4();
+
+      let accountTransData = [];
+      for (let i = 0; i < nameTranslation.length; i++) {
+        const { name, lang } = nameTranslation[i];
+
+        accountTransData.push({
+          accountId: accountId,
+          name: nameTranslation[i].name,
+          lang: nameTranslation[i].lang,
+          createdAt: Math.floor(Date.now() / 1000),
+          createdBy: userId,
+        });
+      }
+
+      // // Create new account
+      await Account.create({
+        id: accountId,
+        userId: userId,
+        categoryId: categoryId,
+        subCategoryId: subcategoryId,
+        description,
+        createdAt: Math.floor(Date.now() / 1000),
+        createdBy: userId,
+      });
 
       await AccountTrans.bulkCreate(accountTransData);
 
       return res.status(201).json({
         status: 201,
-        message: "Account created  OKfully.",
-        data: { account_id },
+        message: "Account created  successfully.",
+        data: { accountId },
         error: null,
       });
     } catch (error) {
@@ -163,58 +156,34 @@ module.exports = {
 
   updateAccount: async (req, res) => {
     try {
+      const userId = req.user.id;
       const {
         accountId,
-        usersId,
-        name,
+        nameTranslation,
         categoryId,
-        subCategoryId,
+        subcategoryId,
         description,
       } = req.body;
 
-      // Validate presence of accountId
-      if (!accountId) {
-        return res.status(400).json({
-          status: 400,
-          message: "Account ID is required.",
-          data: null,
-          error: "Missing accountId in request.",
+      const validation = new VALIDATOR(req.body, {
+        accountId: VALIDATION_RULES.ACCOUNT.accountId,
+        nameTranslation: VALIDATION_RULES.ACCOUNT.nameTranslation,
+        categoryId: VALIDATION_RULES.ACCOUNT.categoryId,
+        subcategoryId: VALIDATION_RULES.ACCOUNT.subcategoryId,
+        description: VALIDATION_RULES.ACCOUNT.description,
+      });
+
+      if (validation.fails()) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
-
-      // Validate presence of userId
-      if (!usersId) {
-        return res.status(400).json({
-          status: 400,
-          message: "User ID is required.",
-          data: null,
-          error: "Missing userId in request body.",
-        });
-      }
-
-      // Validate name array
-      if (!Array.isArray(name) || name.length === 0) {
-        return res.status(400).json({
-          status: 400,
-          message: "Name array is required and cannot be empty.",
-          data: null,
-          error: "Invalid name format.",
-        });
-      }
-
-      // Validate each name entry
-      for (const i of name) {
-        if (!i.value || !i.lang) {
-          return res.status(400).json({
-            message:
-              "Each name entry must have both value and lang properties.",
-          });
-        }
-      }
-
       // Check if the account exists
       const existingAccount = await Account.findOne({
-        where: { id: accountId, userId: usersId, isDeleted: false },
+        where: { id: accountId, userId: userId, isDeleted: false },
         attributes: ["id"],
       });
 
@@ -227,8 +196,45 @@ module.exports = {
         });
       }
 
+      //check zccount by name and lang
+      for (let i = 0; i < nameTranslation.length; i++) {
+        const query = `
+        SELECT 
+        ac.user_id AS userId,
+        act.account_id AS accountId
+        FROM account AS ac
+        LEFT JOIN account_trans AS act ON ac.id = act.account_id
+        WHERE ac.is_deleted = false 
+        AND ac.user_id = :userId
+        AND LOWER(act.lang) = LOWER(:lang)
+        AND LOWER(act.name) = LOWER(:name)
+        `;
+        const existingAccount = await sequelize.query(query, {
+          replacements: {
+            userId: userId,
+            name: nameTranslation[i].name,
+            lang: nameTranslation[i].lang,
+          },
+          type: sequelize.QueryTypes.SELECT,
+          attributes: ["userId", "name", "lang", "categoryId", "subcategoryId"],
+        });
+        console.log("first");
+
+        if (existingAccount.length > 0) {
+          return res.status(HTTP_STATUS_CODES.CONFLICT).json({
+            status: HTTP_STATUS_CODES.CONFLICT,
+            message: `Account '${nameTranslation[i].name}' already exists in '${nameTranslation[i].lang}'`,
+            data: "",
+            error: "",
+          });
+        }
+      }
+
       // Check if categoryId exists in MasterCategory
-      const categoryExists = await MasterCategory.findByPk(categoryId);
+      const categoryExists = await MasterCategory.findOne({
+        where: { id: categoryId, isDeleted: false },
+      });
+
       if (!categoryExists) {
         return res.status(400).json({
           status: 400,
@@ -239,7 +245,10 @@ module.exports = {
       }
 
       // Check if subCategoryId exists in MasterSubcategory
-      const subCategoryExists = await MasterSubcategory.findByPk(subCategoryId);
+      const subCategoryExists = await MasterSubcategory.findOne({
+        where: { id: subcategoryId, isDeleted: false },
+      });
+
       if (!subCategoryExists) {
         return res.status(400).json({
           status: 400,
@@ -249,28 +258,36 @@ module.exports = {
         });
       }
 
+      //create bulkdata
+
+      let accountTrans = [];
+      for (let i = 0; i < nameTranslation.length; i++) {
+        const { name, lang } = nameTranslation[i];
+
+        accountTrans.push({
+          id: uuidv4(),
+          accountId: accountId,
+          name: nameTranslation[i].name.toLowerCase(),
+          lang: nameTranslation[i].lang.toLowerCase(),
+          description,
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: userId,
+        });
+      }
+
       // Update account details
       await Account.update(
         {
-          categoryId,
-          subcategoryId: subCategoryId,
-          description,
           updatedAt: Math.floor(Date.now() / 1000),
-          updated_by: req.body ? req.body.name : "System",
+          updated_by: userId,
         },
-        { where: { id: accountId } }
+        { where: { id: accountId, isDeleted: false } }
       );
 
-      // Update account translations (delete existing and add new)
-      await AccountTrans.destroy({ where: { Account_id: accountId } });
+      // delete data in account trans
+      await AccountTrans.destroy({ where: { accountId: accountId } });
 
-      const accountTransData = name.map((entry) => ({
-        Account_id: accountId,
-        name: entry.value,
-        lang: entry.lang,
-      }));
-
-      await AccountTrans.bulkCreate(accountTransData);
+      await AccountTrans.bulkCreate(accountTrans);
 
       return res.status(200).json({
         status: 200,
@@ -291,19 +308,22 @@ module.exports = {
 
   deleteAccount: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.ACCOUNT, res)) return;
+      const usersId = req.user.id;
+
       const { accountId } = req.params;
 
-      // Validate input
-      if (!accountId) {
+      const validation = new VALIDATOR(req.params, {
+        accountId: VALIDATION_RULES.ACCOUNT.accountId,
+      });
+
+      if (validation.fails()) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: i18n.__("api.accounts.delete.missingFields"),
-          data: null,
-          error: "Missing accountId or usersId in request.",
+          message: "Validation failed.",
+          data: "",
+          error: validation.errors.all(),
         });
       }
-
       // Check if the account exists and belongs to the user
       const account = await Account.findOne({
         where: { id: accountId, isDeleted: false },
@@ -321,8 +341,21 @@ module.exports = {
 
       // Perform soft delete
       await Account.update(
-        { isDeleted: true, deletedAt: Math.floor(Date.now() / 1000) },
+        {
+          isDeleted: true,
+          deletedAt: Math.floor(Date.now() / 1000),
+          deletedBy: usersId,
+        },
         { where: { id: accountId } }
+      );
+
+      await AccountTrans.update(
+        {
+          isDeleted: true,
+          deletedAt: Math.floor(Date.now() / 1000),
+          deletedBy: usersId,
+        },
+        { where: { accountId: accountId } }
       );
 
       return res.status(HTTP_STATUS_CODES.OK).json({
@@ -344,109 +377,68 @@ module.exports = {
 
   getAllAccounts: async (req, res) => {
     try {
-      if (!validateRequest(req.body, VALIDATION_RULES.ACCOUNT, res)) return;
-
       // Extract pagination parameters from the request
       const page = parseInt(req.query.page, 10) || 1; // Default to page 1
       const limit = parseInt(req.query.limit, 10) || 10; // Default to 10 records per page
-      const offset = (page - 1) * pageSize;
+      const offset = (page - 1) * limit;
 
       const rawQuery = `
-      SELECT
-        ac.id AS id ,
-        ac."userId" AS "userId" ,
-        act.name AS "accountName" ,
-        act.lang AS "accountLang" ,
-        ac."categoryId" AS "categoryId",
-        ac."subcategoryId" AS "subcategoryId"
+        SELECT
+          ac.id AS id ,
+          ac.user_id AS userId,
+          act.name AS accountName ,
+          act.lang AS accountLang ,
+          ac.category_id AS categoryId,
+          ac.subcategory_id AS subcategoryId
 
-          FROM  accounts AS ac
-                  JOIN
-                account_trans AS act
-                  ON
-                ac.id = act."Account_id"
+            FROM  account AS ac
+                    LEFT JOIN
+                  account_trans AS act
+                    ON
+                  ac.id = act.account_id
 
-          where ac."isDeleted" = false
-           ORDER BY ac.created_at
-
-      `;
+            where ac.is_deleted = false
+             ORDER BY ac.created_at
+            LIMIT :limit OFFSET :offset;
+        `;
 
       // SQL query to count total records
       const countQuery = `
-    SELECT COUNT(*) AS totalRecords
-    FROM accounts AS ac
-    WHERE ac."isDeleted" = false;
-  `;
+      SELECT COUNT(id) AS totalRecords
+      FROM account AS ac
+      WHERE ac.is_deleted = false;
+    `;
 
-      // Execute the raw queries
-      const [accountsData, totalCountResult] = await Promise.all([
-        sequelize.query(rawQuery, {
-          replacements: { limit: pageSize, offset },
-          type: Sequelize.QueryTypes.SELECT,
-        }),
-        sequelize.query(countQuery, {
-          type: Sequelize.QueryTypes.SELECT,
-        }),
-      ]);
+      /// Execute the raw queries
+      const accountsData = await sequelize.query(rawQuery, {
+        replacements: { limit, offset },
+        type: Sequelize.QueryTypes.SELECT,
+      });
+      const totalCountResult = await sequelize.query(countQuery, {
+        type: Sequelize.QueryTypes.SELECT,
+      });
 
       const totalRecords = parseInt(totalCountResult[0].totalRecords, 10);
-      const totalPages = Math.ceil(totalRecords / pageSize);
+      const totalPages = Math.ceil(totalRecords / limit);
+
+      //account data show
 
       // Handle empty data scenario
       if (!accountsData || accountsData.length === 0) {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.accounts.notFound") || "No accounts found",
-          data: [],
-          pagination: {
-            currentPage: page,
-            totalPages,
-            totalRecords,
-          },
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
       console.log("accountsData: ", accountsData);
 
-      const formattedData = accountsData.reduce((acc, row) => {
-        let account = acc.find((c) => c.id === row.account_id);
-        console.log("account: ", account);
-
-        if (!account) {
-          account = {
-            id: row.account_id,
-            userId: row.userId,
-            name: [],
-            category: row.categoryId,
-            subcategories: row.subcategoryId,
-          };
-          console.log("account: ", account);
-          acc.push(account);
-        }
-
-        if (row.accountName) {
-          const existsAccName = account.name.some(
-            (t) => t.lang === row.accountLang && t.value === row.accountName
-          );
-          if (!existsAccName) {
-            account.name.push({
-              value: row.accountName,
-              lang: row.accountLang,
-            });
-          }
-        }
-
-        return acc;
-      }, []);
-      console.log("formattedData", formattedData);
-
-      // Return all accounts
-      // Return formatted accounts
       return res.status(HTTP_STATUS_CODES.OK).json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.accounts.found") || "Accounts retrieved  OKfully",
-        data: formattedData,
+        data: accountsData,
         pagination: {
           currentPage: page,
           totalPages,

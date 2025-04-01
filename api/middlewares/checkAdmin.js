@@ -12,8 +12,8 @@ const checkAdmin = async (req, res, next) => {
       return res.json({
         status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__("api.errors.unauthorized"),
-        data: null,
-        error: null,
+        data: "",
+        error: "",
       });
     }
 
@@ -23,8 +23,8 @@ const checkAdmin = async (req, res, next) => {
       return res.json({
         status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__("Access denied. No token provided."),
-        data: null,
-        error: null,
+        data: "",
+        error: "",
       });
     }
 
@@ -39,8 +39,8 @@ const checkAdmin = async (req, res, next) => {
       return res.json({
         status: HTTP_STATUS_CODES.UNAUTHORIZED,
         message: i18n.__("api.errors.unauthorized"),
-        data: null,
-        error: null,
+        data: "",
+        error: "",
       });
     }
 

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const adminAuthRoutes = require("./auth/authRoutes");
 const categoryRoutes = require("./Master/Category/categoryRoutes");
-const userDeleteRoutes = require("./user/userDeleteRoutes");
+const userAction = require("./user/userDeleteRoutes");
 const subcategoryRoutes = require("./Master/subCategory/subcategoryRoutes");
 const countryRoutes = require("./Master/Country/countryRoutes");
 const cityRoutes = require("./Master/city/cityRoutes");
@@ -11,7 +11,7 @@ const cityRoutes = require("./Master/city/cityRoutes");
 router.use("/auth", adminAuthRoutes);
 
 //User delete
-router.use("/deleteuser", userDeleteRoutes);
+router.use("/user", userAction);
 
 //categories:
 router.use("/category", categoryRoutes);

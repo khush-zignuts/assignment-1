@@ -51,11 +51,6 @@ const Account = sequelize.define(
     tableName: "account",
     freezeTableName: true,
     timestamps: false,
-  },
-  {
-    tableName: "accounts",
-    freezeTableName: true,
-    timestamps: false,
   }
 );
 

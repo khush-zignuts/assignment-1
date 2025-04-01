@@ -9,9 +9,9 @@ const checkUser = require("../../../middlewares/checkUser");
 
 const router = express.Router();
 
-router.use("/add", checkUser, addAccount);
-router.use("/update", checkUser, updateAccount);
-router.use("/delete", checkUser, deleteAccount);
+router.post("/add", checkUser, addAccount);
+router.post("/update", checkUser, updateAccount);
+router.delete("/delete/:accountId", checkUser, deleteAccount);
 
 router.get("/getAll", checkUser, getAllAccounts);
 

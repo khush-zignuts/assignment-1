@@ -3,7 +3,8 @@ const {
   signup,
   login,
   logout,
-  EditUser,
+  getProfile,
+  editProfile,
 } = require("../../../controllers/user/auth/AuthController");
 const checkUser = require("../../../middlewares/checkUser");
 
@@ -13,6 +14,8 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.post("/logout", checkUser, logout);
 
-router.post("/editUser", checkUser, EditUser);
+router.post("/editProfile", checkUser, editProfile);
+
+router.get("/getProfile/:userId", checkUser, getProfile);
 
 module.exports = router;

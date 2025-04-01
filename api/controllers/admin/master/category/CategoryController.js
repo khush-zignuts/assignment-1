@@ -3,8 +3,6 @@ const i18n = require("../../../../config/i18n");
 const {
   MasterCategoryTrans,
   MasterCategory,
-  MasterSubcategoryTrans,
-  MasterSubcategory,
   Account,
 } = require("../../../../models");
 const { Sequelize, Op } = require("sequelize");
@@ -57,8 +55,8 @@ module.exports = {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
             message: `Category '${translation[i].name}' already exists in '${translation[i].lang}'`,
-            data: null,
-            error: null,
+            data: "",
+            error: "",
           });
         }
       }
@@ -179,8 +177,6 @@ module.exports = {
           },
           type: sequelize.QueryTypes.SELECT, // Ensure SELECT query type
         });
-
-        console.log("existingCategory: ", existingCategory);
 
         if (existingCategory.length > 0) {
           // Ensure there are records to delete
@@ -335,7 +331,6 @@ module.exports = {
         });
       }
 
-     
       // **Update MasterCategory**
       await MasterCategory.update(
         {

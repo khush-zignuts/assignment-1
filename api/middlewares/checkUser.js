@@ -2,58 +2,68 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const i18n = require("../config/i18n");
+const { HTTP_STATUS_CODES } = require("../config/constants");
 
 const checkUser = async (req, res, next) => {
-  // const { t } = req; // Get translation function
   try {
     const authHeader = req.headers.authorization;
-    // console.log("authHeader: ", authHeader);
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(HTTP_STATUS_CODES.UNAUTHORIZED)
-        .json({ message: i18n.__("api.errors.unauthorized") });
+      return res.json({
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
+        message: i18n.__("api.errors.unauthorized"),
+        data: "",
+        error: "",
+      });
     }
-
     const token = authHeader.split(" ")[1];
-    // console.log("token: ", token);
 
     if (!token) {
-      return res
-        .status(HTTP_STATUS_CODES.UNAUTHORIZED)
-        .json({ message: i18n.__("Access denied. No token provided.") });
+      return res.json({
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
+        message: i18n.__("Access denied. No token provided."),
+        data: "",
+        error: "",
+      });
     }
 
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    console.log("decoded: ", decoded);
 
     const user = await User.findOne({
       where: { id: decoded.id },
-      // attributes: ["id"],
+      attributes: ["id", "accessToken"],
     });
-    // console.log("user: ", user);
+
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: i18n.__("api.errors.unauthorized") });
+      return res.json({
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
+        message: i18n.__("api.errors.unauthorized"),
+        data: "",
+        error: "",
+      });
     }
 
-    try {
-      if (user.accessToken === token) {
-        console.log("Token matches!");
-      } else {
-        console.log("Token does not match.");
-      }
-    } catch (error) {
-      console.error({ message: i18n.__("api.errors.unauthorized") });
+    if (user.accessToken !== token) {
+      return res.json({
+        status: HTTP_STATUS_CODES.UNAUTHORIZED,
+        message: i18n.__(
+          "api.errors.unauthorized" || "Invalid or expired token."
+        ),
+        data: "",
+        error: "",
+      });
     }
 
-    // // Set admin on request object
     req.user = user;
 
-    next(); // Proceed if user
+    next();
   } catch (error) {
-    res.status(401).json({ message: i18n.__("api.errors.unauthorized") });
+    return res.json({
+      status: HTTP_STATUS_CODES.UNAUTHORIZED,
+      message: i18n.__("api.errors.unauthorized"),
+      data: null,
+      error: error.message,
+    });
   }
 };
 
