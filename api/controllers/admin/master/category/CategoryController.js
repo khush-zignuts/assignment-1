@@ -13,6 +13,12 @@ const { VALIDATION_RULES } = require("../../../../config/validationRules");
 
 const VALIDATOR = require("validatorjs");
 
+//redis:
+//with redis:
+const redis = require("redis");
+const client = redis.createClient();
+client.connect(); // Connect Redis cli
+
 module.exports = {
   addCategory: async (req, res) => {
     try {
@@ -65,11 +71,11 @@ module.exports = {
       const masterCategoryId = uuidv4();
 
       // // Prepare data for bulk insert
-      let category_trans = [];
+      let categoryTrans = [];
       for (let i = 0; i < translation.length; i++) {
         const { name, lang } = translation[i];
 
-        category_trans.push({
+        categoryTrans.push({
           masterCategoryId,
           name: translation[i].name,
           lang: translation[i].lang,
@@ -86,7 +92,7 @@ module.exports = {
       });
 
       // Create master-category-trans
-      await MasterCategoryTrans.bulkCreate(category_trans, { validate: true });
+      await MasterCategoryTrans.bulkCreate(categoryTrans, { validate: true });
 
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.CREATED,
@@ -220,11 +226,11 @@ module.exports = {
 
       // // Prepare data for bulk insert
 
-      let category_trans = [];
+      let categoryTrans = [];
       for (let i = 0; i < translation.length; i++) {
         const { name, lang } = translation[i];
 
-        category_trans.push({
+        categoryTrans.push({
           id: uuidv4(),
           masterCategoryId: categoryId,
           name: translation[i].name.toLowerCase(),
@@ -243,7 +249,7 @@ module.exports = {
         { where: { id: categoryId } }
       );
 
-      await MasterCategoryTrans.bulkCreate(category_trans, { validate: true });
+      await MasterCategoryTrans.bulkCreate(categoryTrans, { validate: true });
 
       return res.json({
         status: HTTP_STATUS_CODES.OK,
@@ -302,8 +308,8 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Category exists in Account, cannot proceed.",
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -326,8 +332,8 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: "No subcategories found for this category.",
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -362,253 +368,221 @@ module.exports = {
       return res.json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message,
       });
     }
   },
+
+  // listingCategory: async (req, res) => {
+  //   try {
+  //     const adminId = req.admin.id;
+  //     const { page = 1, limit = 10 } = req.query;
+  //     const offset = (page - 1) * limit;
+  //     const search = req.query.q;
+  //     const lang = i18n.getLocale() || "en";
+
+  //     const whereClause = search
+  //       ? `WHERE mc.is_deleted = false AND mct.name ILIKE :searchQuery AND mct.lang = :lang AND mst.lang = :lang`
+  //       : `WHERE mc.is_deleted = false`;
+
+  //     const rawQuery = `
+  //     SELECT
+  //       mc.id AS category_id,
+  //       mct.name AS category_name,
+  //       mct.lang AS category_lang,
+  //       mc.is_active AS category_active,
+  //       ms.id AS subcategory_id,
+  //       mst.name AS subcategory_name,
+  //       mst.lang AS subcategory_lang,
+  //       mst.is_active AS subcategory_active
+  //     FROM master_category AS mc
+  //     JOIN master_category_trans AS mct ON mc.id = mct.master_category_id
+  //     LEFT JOIN master_subcategory AS ms ON mc.id = ms.category_id AND ms.is_deleted = false
+  //     LEFT JOIN master_subcategory_trans AS mst ON ms.id = mst.master_subcategory_id
+  //     ${whereClause}
+  //     ORDER BY mc.created_at DESC
+
+  //   `;
+
+  //     // Calculate total records for pagination
+  //     const countQuery = `
+  //             SELECT COUNT(*) AS total
+  //             FROM master_category AS mc
+  //             WHERE mc.is_deleted = false;
+  //           `;
+
+  //     const replacements = search ? { searchQuery: `%${search}%` } : {};
+
+  //     const categoriesData = await sequelize.query(rawQuery, {
+  //       replacements,
+  //       type: Sequelize.QueryTypes.SELECT,
+  //     });
+
+  //     if (!categoriesData.length) {
+  //       return res.json({
+  //         status: HTTP_STATUS_CODES.NOT_FOUND,
+  //         message: "No categories found",
+  //         data: "",
+  //         error: "",
+  //       });
+  //     }
+
+  //     const countResult = await sequelize.query(countQuery, {
+  //       type: Sequelize.QueryTypes.SELECT,
+  //     });
+
+  //     const totalRecords = countResult[0].total;
+  //     const totalPages = Math.ceil(totalRecords / limit);
+
+  //     const formattedData = categoriesData.reduce((acc, row) => {
+  //       let category = acc.find((c) => c.id === row.category_id);
+  //       if (!category) {
+  //         category = {
+  //           id: row.category_id,
+  //           name: row.category_name,
+  //           isActive: row.category_active,
+  //           lang: row.category_lang,
+  //           subcategories: [],
+  //         };
+  //         acc.push(category);
+  //       }
+  //       if (row.subcategory_id) {
+  //         category.subcategories.push({
+  //           id: row.subcategory_id,
+  //           name: row.subcategory_name,
+  //           lang: row.subcategory_lang,
+  //           isActive: row.subcategory_active,
+  //         });
+  //       }
+  //       return acc;
+  //     }, []);
+
+  //     return res.json({
+  //       status: HTTP_STATUS_CODES.OK,
+  //       message: "Categories retrieved successfully",
+  //       data: formattedData,
+  //       pagination: {
+  //         currentPage: page,
+  //         totalPages: totalPages,
+  //         totalRecords: totalRecords,
+  //       },
+  //       error: "",
+  //     });
+  //   } catch (error) {
+  //     console.error("Error listing categories:", error);
+  //     return res.json({
+  //       status: HTTP_STATUS_CODES.SERVER_ERROR,
+  //       message: "Internal server error",
+  //       data: "",
+  //       error: error.message,
+  //     });
+  //   }
+  // },
+
   listingCategory: async (req, res) => {
     try {
       const adminId = req.admin.id;
       const { page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
-
       const search = req.query.q;
-      console.log("search: ", search);
+      const lang = i18n.getLocale() || "en";
 
-      if (search === undefined || search === null || search === "") {
-        try {
-          //if not search then return all categories with subcategories and translations
-          // :large_green_circle: **Raw SQL Query to Fetch Categories, Their Translations, and Subcategories**
-          const rawQuery = `
-            SELECT
-              mc.id AS category_id,
-              mct.name AS category_name,
-              mct.lang AS category_lang,
-              mc.is_active AS category_active,
-              ms.id AS subcategory_id,
-              mst.name AS subcategory_name,
-              mst.lang AS subcategory_lang,
-              mst.is_active AS subcategory_active
-                FROM master_category as mc
-                JOIN master_category_trans as mct ON mc.id = mct.master_category_id
-                LEFT JOIN master_subcategory as ms ON mc.id = ms.category_id AND ms.is_deleted = false
-                LEFT JOIN master_subcategory_trans as mst ON ms.id = mst.master_subcategory_id
-                WHERE mc.is_deleted = false
-                ORDER BY mc.created_at DESC
-                LIMIT :limit OFFSET :offset;
-                `;
+      // Generate a unique cache key based on search and pagination
+      const cacheKey = search ? `categories_search${search}` : `categories_all`;
 
-          // // Execute the raw query
-          const categoriesData = await sequelize.query(rawQuery, {
-            replacements: { limit, offset },
-            type: Sequelize.QueryTypes.SELECT,
-          });
-
-          if (!categoriesData || categoriesData.length === 0) {
-            return res.json({
-              status: HTTP_STATUS_CODES.NOT_FOUND,
-              message:
-                i18n.__("api.categories.notFound") || "No categories found",
-              data: null,
-              error: null,
-            });
-          }
-
-          const formattedData = categoriesData.reduce((acc, row) => {
-            // Find if the category already exists in the accumulator
-            let category = acc.find((c) => c.id === row.category_id);
-            if (!category) {
-              category = {
-                id: row.category_id,
-                name: [],
-                isActive: row.category_active,
-                subcategories: [],
-              };
-              acc.push(category);
-            }
-
-            // Add translation only if it's not already included
-            if (row.category_name) {
-              const existsCatName = category.name.some(
-                (t) =>
-                  t.lang === row.category_lang && t.value === row.category_name
-              );
-              if (!existsCatName) {
-                category.name.push({
-                  value: row.category_name,
-                  lang: row.category_lang,
-                });
-              }
-            }
-
-            // Check if the subcategory already exists in the category's subcategories
-            if (row.subcategory_id) {
-              // Find or create the subcategory object within category.subcategories
-              let subcat = category.subcategories.find(
-                (s) => s.id === row.subcategory_id
-              );
-              if (!subcat) {
-                subcat = {
-                  id: row.subcategory_id,
-                  name: [], // Array of subcategory translations
-                  isActive: row.subcategory_active,
-                };
-                category.subcategories.push(subcat);
-              }
-              if (row.subcategory_name) {
-                const existssubcatName = subcat.name.some(
-                  (t) =>
-                    t.lang === row.subcategory_lang &&
-                    t.value === row.subcategory_name
-                );
-                if (!existssubcatName) {
-                  subcat.name.push({
-                    value: row.subcategory_name,
-                    lang: row.subcategory_lang,
-                  });
-                }
-              }
-            }
-            return acc;
-          }, []);
-
-          // Calculate total records for pagination
-          const countQuery = `
-              SELECT COUNT(*) AS total
-              FROM master_category AS mc
-              WHERE mc.is_deleted = false;
-            `;
-
-          const countResult = await sequelize.query(countQuery, {
-            type: Sequelize.QueryTypes.SELECT,
-          });
-
-          const totalRecords = countResult[0].total;
-          const totalPages = Math.ceil(totalRecords / limit);
-
-          return res.json({
-            status: HTTP_STATUS_CODES.OK,
-            message:
-              i18n.__("api.categories.list OK") || "Categories listed  OKfully",
-            data: formattedData,
-            pagination: {
-              currentPage: page,
-              totalPages,
-              totalRecords,
-            },
-            error: null,
-          });
-        } catch (error) {
-          console.error("Error listing categories:", error);
-          return res.json({
-            status: HTTP_STATUS_CODES.SERVER_ERROR,
-            message: i18n.__("api.errors.serverError"),
-            data: null,
-            error: error.message,
-          });
-        }
-      } else {
-        try {
-          const lang = i18n.getLocale() || "en";
-          console.log("lang: ", lang);
-          console.log("Search Query:", `%${search}%`);
-          // :large_green_circle: **Raw SQL Query to Fetch Categories, Their Translations, and Subcategories**
-          const rawQuery = `
-            SELECT
-              mc.id AS category_id,
-              mct.name AS category_name,
-              mct.lang AS category_lang,
-              mc."isActive" AS category_active,
-              ms.id AS subcategory_id,
-              mst.name AS subcategory_name,
-              mst.lang AS subcategory_lang,
-              mst."isActive" AS subcategory_active
-                FROM master_categories as mc
-                JOIN master_category_trans as mct ON mc.id = mct.master_category_id
-                LEFT JOIN master_subcategories as ms ON mc.id = ms."categoryId" AND ms."isDeleted" = false
-                LEFT JOIN master_subcategory_trans as mst ON ms.id = mst.master_subcategory_id
-                WHERE mc."isDeleted" = false
-                    AND mct.name ILIKE :searchQuery
-                    AND mct.lang = :lang
-                    AND mst.lang = :lang
-                    ORDER BY mc.created_at DESC
-                    LIMIT :limit OFFSET :offset;
-                    `;
-
-          // // Execute the raw query
-          const categoriesData = await sequelize.query(rawQuery, {
-            replacements: {
-              limit,
-              offset,
-              searchQuery: `%${search}%`,
-              lang,
-              // , limit, offset
-            },
-            type: Sequelize.QueryTypes.SELECT,
-          });
-
-          if (!categoriesData || categoriesData.length === 0) {
-            return res.json({
-              status: HTTP_STATUS_CODES.NOT_FOUND,
-              message:
-                i18n.__("api.categories.notFound") || "No categories found",
-              data: null,
-              error: null,
-            });
-          }
-
-          // //simple language wise
-          const formattedData = categoriesData.reduce((acc, row) => {
-            // It checks if this category already exists in acc (accumulator).
-            let category = acc.find((c) => c.id === row.category_id);
-            if (!category) {
-              category = {
-                id: row.category_id,
-                name: row.category_name,
-                isActive: row.category_active,
-                lang: row.category_lang,
-                subcategories: [],
-              };
-              acc.push(category);
-            }
-            if (row.subcategory_id) {
-              category.subcategories.push({
-                id: row.subcategory_id,
-                name: row.subcategory_name,
-                lang: row.subcategory_lang,
-                isActive: row.subcategory_active,
-              });
-            }
-            return acc;
-          }, []);
-          return res.json({
-            status: HTTP_STATUS_CODES.OK,
-            message:
-              i18n.__("api.categories.list OK") || "Categories listed  OKfully",
-            data: formattedData,
-            pagination: {
-              currentPage: page,
-              totalPages,
-              totalRecords,
-            },
-            error: null,
-          });
-        } catch (error) {
-          console.error("Error listing categories:", error);
-          return res.json({
-            status: HTTP_STATUS_CODES.SERVER_ERROR,
-            message: i18n.__("api.errors.serverError"),
-            data: null,
-            error: error.message,
-          });
-        }
+      // ✅ Step 1: Check if data exists in Redis
+      const cachedData = await client.get(cacheKey);
+      if (cachedData) {
+        return res.json({
+          status: HTTP_STATUS_CODES.OK,
+          message: "Categories retrieved from cache",
+          data: JSON.parse(cachedData),
+          pagination: { currentPage: page },
+          error: "",
+        });
       }
+
+      // ✅ Step 2: Fetch from database if cache miss
+      const whereClause = search
+        ? `WHERE mc.is_deleted = false AND mct.name ILIKE :searchQuery AND mct.lang = :lang AND mst.lang = :lang`
+        : `WHERE mc.is_deleted = false`;
+
+      const rawQuery = `
+      SELECT
+        mc.id AS category_id,
+        mct.name AS category_name,
+        mct.lang AS category_lang,
+        mc.is_active AS category_active,
+        ms.id AS subcategory_id,
+        mst.name AS subcategory_name,
+        mst.lang AS subcategory_lang,
+        mst.is_active AS subcategory_active
+      FROM master_category AS mc
+      JOIN master_category_trans AS mct ON mc.id = mct.master_category_id
+      LEFT JOIN master_subcategory AS ms ON mc.id = ms.category_id AND ms.is_deleted = false
+      LEFT JOIN master_subcategory_trans AS mst ON ms.id = mst.master_subcategory_id
+      ${whereClause}
+      ORDER BY mc.created_at DESC
+      LIMIT :limit OFFSET :offset;
+    `;
+
+      const replacements = search ? { searchQuery: `%${search}%` } : {};
+
+      const categoriesData = await sequelize.query(rawQuery, {
+        replacements,
+        type: Sequelize.QueryTypes.SELECT,
+      });
+
+      if (!categoriesData.length) {
+        return res.json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: "No categories found",
+          data: "",
+          error: "",
+        });
+      }
+
+      // ✅ Step 3: Format data
+      const formattedData = categoriesData.reduce((acc, row) => {
+        let category = acc.find((c) => c.id === row.category_id);
+        if (!category) {
+          category = {
+            id: row.category_id,
+            name: row.category_name,
+            isActive: row.category_active,
+            lang: row.category_lang,
+            subcategories: [],
+          };
+          acc.push(category);
+        }
+        if (row.subcategory_id) {
+          category.subcategories.push({
+            id: row.subcategory_id,
+            name: row.subcategory_name,
+            lang: row.subcategory_lang,
+            isActive: row.subcategory_active,
+          });
+        }
+        return acc;
+      }, []);
+
+      // ✅ Step 4: Cache the data in Redis (expires in 1 hour)
+      await client.setEx(cacheKey, 3600, JSON.stringify(formattedData));
+
+      return res.json({
+        status: HTTP_STATUS_CODES.OK,
+        message: "Categories retrieved successfully",
+        data: formattedData,
+        pagination: { currentPage: page },
+        error: "",
+      });
     } catch (error) {
+      console.error("Error listing categories:", error);
       return res.json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
-        message: i18n.__("api.errors.serverError"),
-        data: null,
+        message: "Internal server error",
+        data: "",
         error: error.message,
       });
     }

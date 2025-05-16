@@ -6,6 +6,7 @@ const userAction = require("./user/userDeleteRoutes");
 const subcategoryRoutes = require("./Master/subCategory/subcategoryRoutes");
 const countryRoutes = require("./Master/Country/countryRoutes");
 const cityRoutes = require("./Master/city/cityRoutes");
+const dropDownRoutes = require("./master/dropDown/dropDownRoutes");
 
 //authentication
 router.use("/auth", adminAuthRoutes);
@@ -24,5 +25,8 @@ router.use("/country", countryRoutes);
 
 //categories:
 router.use("/city", cityRoutes);
+
+//dropDown:
+router.use("/dropDown", dropDownRoutes);
 
 module.exports = router;

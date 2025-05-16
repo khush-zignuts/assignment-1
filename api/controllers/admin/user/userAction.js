@@ -25,7 +25,11 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
+<<<<<<< Updated upstream
           data: null,
+=======
+          data: "",
+>>>>>>> Stashed changes
           error: validation.errors.all(),
         });
       }
@@ -52,8 +56,13 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.auth.delete.usernotFound"),
+<<<<<<< Updated upstream
           data: null,
           error: null,
+=======
+          data: "",
+          error: "",
+>>>>>>> Stashed changes
         });
       }
 
@@ -71,14 +80,22 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.auth.delete.OKDelete"),
         data: { userId },
+<<<<<<< Updated upstream
         error: null,
+=======
+        error: "",
+>>>>>>> Stashed changes
       });
     } catch (error) {
       console.error("Error deleting user:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
+<<<<<<< Updated upstream
         data: null,
+=======
+        data: "",
+>>>>>>> Stashed changes
         error: error.message,
       });
     }
@@ -291,7 +308,11 @@ module.exports = {
             totalPages,
             totalRecords,
           },
+<<<<<<< Updated upstream
           error: null,
+=======
+          error: "",
+>>>>>>> Stashed changes
         });
       }
 
@@ -304,14 +325,22 @@ module.exports = {
           totalPages,
           totalRecords,
         },
+<<<<<<< Updated upstream
         error: null,
+=======
+        error: "",
+>>>>>>> Stashed changes
       });
     } catch (error) {
       console.error("Error fetching users:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: "Internal server error.",
+<<<<<<< Updated upstream
         data: null,
+=======
+        data: "",
+>>>>>>> Stashed changes
         error: error.message || "An unknown error occurred.",
       });
     }

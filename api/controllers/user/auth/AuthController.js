@@ -50,8 +50,8 @@ module.exports = {
         return res.json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.auth.signup.emailExists"),
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -172,7 +172,7 @@ module.exports = {
           error: "",
         });
       }
-      if (user.accessToken === null) {
+      if (user.accessToken === "") {
         return res.json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Already logged out",

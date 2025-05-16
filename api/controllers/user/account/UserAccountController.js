@@ -89,7 +89,11 @@ module.exports = {
         return res.status(400).json({
           status: 400,
           message: "Invalid categoryId.",
+<<<<<<< Updated upstream
           data: null,
+=======
+          data: "",
+>>>>>>> Stashed changes
           error: "Category not found.",
         });
       }
@@ -104,7 +108,11 @@ module.exports = {
         return res.status(400).json({
           status: 400,
           message: "Invalid subCategoryId.",
+<<<<<<< Updated upstream
           data: null,
+=======
+          data: "",
+>>>>>>> Stashed changes
           error: "Subcategory not found.",
         });
       }
@@ -141,14 +149,18 @@ module.exports = {
         status: 201,
         message: "Account created  successfully.",
         data: { accountId },
+<<<<<<< Updated upstream
         error: null,
+=======
+        error: "",
+>>>>>>> Stashed changes
       });
     } catch (error) {
       console.error("Error adding account:", error);
       return res.status(500).json({
         status: 500,
         message: "Internal server error.",
-        data: null,
+        data: "",
         error: error.message || "An unknown error occurred.",
       });
     }
@@ -191,7 +203,7 @@ module.exports = {
         return res.status(404).json({
           status: 404,
           message: "Account not found or unauthorized.",
-          data: null,
+          data: "",
           error: "Account does not exist.",
         });
       }
@@ -239,7 +251,7 @@ module.exports = {
         return res.status(400).json({
           status: 400,
           message: "Invalid categoryId.",
-          data: null,
+          data: "",
           error: "Category not found.",
         });
       }
@@ -253,7 +265,7 @@ module.exports = {
         return res.status(400).json({
           status: 400,
           message: "Invalid subCategoryId.",
-          data: null,
+          data: "",
           error: "Subcategory not found.",
         });
       }
@@ -293,14 +305,14 @@ module.exports = {
         status: 200,
         message: "Account updated  OKfully.",
         data: { accountId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error updating account:", error);
       return res.status(500).json({
         status: 500,
         message: "Internal server error.",
-        data: null,
+        data: "",
         error: error.message || "An unknown error occurred.",
       });
     }
@@ -334,7 +346,7 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.accounts.delete.notFound"),
-          data: null,
+          data: "",
           error: "Account not found or user not authorized.",
         });
       }
@@ -362,14 +374,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.accounts.delete.OK"),
         data: { accountId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error deleting account:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error.",
       });
     }
@@ -444,14 +456,14 @@ module.exports = {
           totalPages,
           totalRecords,
         },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error fetching accounts:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error.",
       });
     }

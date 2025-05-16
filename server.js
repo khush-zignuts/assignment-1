@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
-const adminRoutes = require("./api/routes/admin/index");
-const userRoutes = require("./api/routes//user/index");
+const Routes = require("./api/routes/index");
+
 const i18n = require("./api/config/i18n");
 const sequelize = require("./api/config/db");
 const languageSelect = require("./api/middlewares/i18n");
@@ -19,8 +19,7 @@ app.use(i18n.init);
 app.use(languageSelect);
 
 //Routes
-app.use("/admin", adminRoutes);
-app.use("/user", userRoutes);
+app.use("api", Routes);
 
 // at last port call :
 const PORT = process.env.PORT || 5000;

@@ -57,14 +57,13 @@ module.exports = {
           type: sequelize.QueryTypes.SELECT,
         });
 
-        console.log("existingsubCategory: ", existingsubCategory);
         // If a category exists, return a conflict response
         if (existingsubCategory.length > 0) {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
             message: `SubCategory '${translation[i].name}' already exists in '${translation[i].lang}'`,
-            data: null,
-            error: null,
+            data: "",
+            error: "",
           });
         }
       }
@@ -73,9 +72,9 @@ module.exports = {
       const mastersubcategoryId = uuidv4();
 
       // // Insert Translations Using `bulkCreate`
-      let subCategory_trans = [];
+      let subCategoryTrans = [];
       for (let i = 0; i < translation.length; i++) {
-        subCategory_trans.push({
+        subCategoryTrans.push({
           masterSubcategoryId: mastersubcategoryId,
           name: translation[i].name,
           lang: translation[i].lang,
@@ -92,7 +91,7 @@ module.exports = {
       });
 
       // Create master-category-trans
-      await MasterSubcategoryTrans.bulkCreate(subCategory_trans, {
+      await MasterSubcategoryTrans.bulkCreate(subCategoryTrans, {
         validate: true,
       });
 
@@ -100,14 +99,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.CREATED,
         message: i18n.__("api.subcategories.addsuccess"),
         data: { mastersubcategoryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error adding subcategory:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }
@@ -201,11 +200,7 @@ module.exports = {
           console.log(
             `Deleted subCategory for masterSubcategoryId: ${masterSubcategoryId}`
           );
-        } else {
-          console.log(
-            `No subCategory found to delete for masterSubcategoryId: ${masterSubcategoryId}`
-          );
-        }
+        } 
       }
       let subcategoryTrans = [];
       for (let i = 0; i < translation.length; i++) {
@@ -238,14 +233,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.subcategories.update OK"),
         data: masterSubcategoryId,
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error updating subcategory:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }
@@ -260,7 +255,7 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Subcategory ID is required",
-          data: null,
+          data: "",
           error: "Missing subcategory ID in request",
         });
       }
@@ -277,7 +272,7 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.subcategories.notFound"),
-          data: null,
+          data: "",
           error: "Subcategory not found or already deleted",
         });
       }
@@ -292,7 +287,7 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.subcategories.assignedToAccount"),
-          data: null,
+          data: "",
           error: "Cannot delete subcategory assigned to an account",
         });
       }
@@ -307,14 +302,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.subcategories.deleted"),
         data: { subCategoryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error deleting subcategory:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }

@@ -11,6 +11,7 @@ const {
   MasterCity,
   MasterCityTrans,
   Account,
+  User,
 } = require("../../../../models");
 
 const VALIDATOR = require("validatorjs");
@@ -57,8 +58,8 @@ module.exports = {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
             message: `Country '${translation[i].name}' already exists in '${translation[i].lang}'`,
-            data: null,
-            error: null,
+            data: "",
+            error: "",
           });
         }
       }
@@ -67,11 +68,11 @@ module.exports = {
       const masterCountryId = uuidv4();
 
       // Prepare data for bulk insert
-      let country_trans = [];
+      let countryTrans = [];
       for (let i = 0; i < translation.length; i++) {
         const { name, lang } = translation[i];
 
-        country_trans.push({
+        countryTrans.push({
           masterCountryId,
           name: translation[i].name,
           lang: translation[i].lang,
@@ -87,7 +88,7 @@ module.exports = {
       });
 
       //   // Create master-country-trans
-      await MasterCountryTrans.bulkCreate(country_trans, {
+      await MasterCountryTrans.bulkCreate(countryTrans, {
         validate: true,
       });
 
@@ -95,14 +96,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.CREATED,
         message: i18n.__("api.countries.addSuccess"),
         data: { masterCountryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error(error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }
@@ -199,11 +200,11 @@ module.exports = {
         }
       }
 
-      let countrty_trans = [];
+      let countrtyTrans = [];
       for (let i = 0; i < translation.length; i++) {
         const { name, lang } = translation[i];
 
-        countrty_trans.push({
+        countrtyTrans.push({
           id: uuidv4(),
           masterCountryId: countryId,
           name: translation[i].name.toLowerCase(),
@@ -221,20 +222,20 @@ module.exports = {
         { where: { id: countryId } }
       );
 
-      await MasterCountryTrans.bulkCreate(countrty_trans, { validate: true });
+      await MasterCountryTrans.bulkCreate(countrtyTrans, { validate: true });
 
       return res.status(HTTP_STATUS_CODES.OK).json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.countries.update OK"),
         data: countrty_trans,
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error updating country:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }
@@ -270,7 +271,7 @@ module.exports = {
           error: "",
         });
       }
-      const countryInAccount = await Account.findOne({
+      const countryInUser = await User.findOne({
         where: { id: countryId, isDeleted: false },
         attributes: ["id"],
       });
@@ -278,9 +279,9 @@ module.exports = {
       if (countryInAccount) {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
-          message: "country exists in Account, cannot proceed.",
-          data: null,
-          error: null,
+          message: "country exists in User, cannot proceed.",
+          data: "",
+          error: "",
         });
       }
 
@@ -303,8 +304,8 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: "No cities found for this countries.",
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -332,18 +333,18 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: "Country deleted  OKfully",
         data: { countryId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error deleting country:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }
-  },
+  }, 
   //not working
   listingCountriesWithCities: async (req, res) => {
     try {
@@ -385,8 +386,6 @@ module.exports = {
         replacements: search ? { searchQuery: `%${search}%` } : {},
         type: Sequelize.QueryTypes.SELECT,
       });
-
-      console.log("Fetched Countries with Cities: ", countriesData);
 
       // If no results found
       if (!countriesData || countriesData.length === 0) {
@@ -456,14 +455,14 @@ module.exports = {
         message:
           i18n.__("api.countries.list OK") || "Countries listed  OKfully",
         data: formattedData,
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error fetching countries with cities:", error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message || "Internal server error",
       });
     }

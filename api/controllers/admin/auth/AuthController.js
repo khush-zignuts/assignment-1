@@ -78,7 +78,58 @@ module.exports = {
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
+        error: error.message,
+      });
+    }
+  },
+
+  logout: async (req, res) => {
+    try {
+      const { adminId } = req.params;
+
+      const admin = await Admin.findOne({
+        where: { id: adminId, isDeleted: false },
+        attributes: ["id", "name"],
+      });
+
+      if (!admin) {
+        return res.json({
+          status: HTTP_STATUS_CODES.NOT_FOUND,
+          message: i18n.__("api.auth.logout.invalidCredentials"),
+          data: "",
+          error: "",
+        });
+      }
+      if (admin.accessToken === "") {
+        return res.json({
+          status: HTTP_STATUS_CODES.BAD_REQUEST,
+          message: "Already logged out",
+          data: "",
+          error: "",
+        });
+      }
+      // Set accessToken to NULL (logout)
+      await Admin.update(
+        {
+          accessToken: null,
+          updatedAt: Math.floor(Date.now() / 1000),
+          updatedBy: adminId,
+        },
+        { where: { id: adminId, isDeleted: false } }
+      );
+      return res.json({
+        status: HTTP_STATUS_CODES.OK,
+        message: i18n.__("api.auth.logout.OK"),
+        data: "",
+        error: "",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      return res.json({
+        status: HTTP_STATUS_CODES.SERVER_ERROR,
+        message: i18n.__("api.errors.serverError"),
+        data: "",
         error: error.message,
       });
     }

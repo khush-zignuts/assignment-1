@@ -28,7 +28,7 @@ module.exports = {
         return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "Validation failed.",
-          data: null,
+          data: "",
           error: validation.errors.all(),
         });
       }
@@ -64,8 +64,8 @@ module.exports = {
           return res.status(HTTP_STATUS_CODES.CONFLICT).json({
             status: HTTP_STATUS_CODES.CONFLICT,
             message: `city '${[i].name}' already exists in 'city${[i].lang}'`,
-            data: null,
-            error: null,
+            data: "",
+            error: "",
           });
         }
       }
@@ -74,9 +74,9 @@ module.exports = {
       const mastercityId = uuidv4();
 
       // // Insert Translations Using `bulkCreate`
-      let City_trans = [];
+      let CityTrans = [];
       for (let i = 0; i < translation.length; i++) {
-        City_trans.push({
+        CityTrans.push({
           masterCityId: mastercityId,
           name: translation[i].name,
           lang: translation[i].lang,
@@ -84,7 +84,7 @@ module.exports = {
           createdBy: adminId,
         });
       }
-      console.log("City_trans: ", City_trans);
+      console.log("CityTrans: ", CityTrans);
       // // // Create master-category || cat_id put in master category table
       const City = await MasterCity.create({
         id: mastercityId,
@@ -102,14 +102,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.CREATED,
         message: i18n.__("api.cities.addsuccess"),
         data: { mastercityId },
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error(error);
       return res.status(HTTP_STATUS_CODES.SERVER_ERROR).json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message,
       });
     }
@@ -185,8 +185,6 @@ module.exports = {
           type: sequelize.QueryTypes.SELECT, // Ensure SELECT query type
         });
 
-        console.log("existingsubCity: ", existingsubCity);
-
         if (existingsubCity.length > 0) {
           // Ensure there are records to delete
           const idsToDelete = existingsubCity.map((city) => city.id);
@@ -235,14 +233,14 @@ module.exports = {
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.subcategories.update OK"),
         data: mastercityId,
-        error: null,
+        error: "",
       });
     } catch (error) {
       console.error("Error updating city:", error);
       return res.json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message,
       });
     }
@@ -258,8 +256,8 @@ module.exports = {
         return res.json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: "City ID is required",
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -273,14 +271,14 @@ module.exports = {
         return res.json({
           status: HTTP_STATUS_CODES.NOT_FOUND,
           message: i18n.__("api.cities.notFound"),
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
       // Check if the city is assigned to any account (if applicable)
       const assignedtoUser = await User.findOne({
-        where: { cityId: city.id },
+        where: { cityId: city.id, isDeleted: false },
         attributes: ["id"],
       });
 
@@ -288,8 +286,8 @@ module.exports = {
         return res.json({
           status: HTTP_STATUS_CODES.BAD_REQUEST,
           message: i18n.__("api.cities.assignedToAccount"),
-          data: null,
-          error: null,
+          data: "",
+          error: "",
         });
       }
 
@@ -306,15 +304,15 @@ module.exports = {
       return res.json({
         status: HTTP_STATUS_CODES.OK,
         message: i18n.__("api.cities.deleted"),
-        data: null,
-        error: null,
+        data: "",
+        error: "",
       });
     } catch (error) {
       console.error("Error deleting city:", error);
       return res.json({
         status: HTTP_STATUS_CODES.SERVER_ERROR,
         message: i18n.__("api.errors.serverError"),
-        data: null,
+        data: "",
         error: error.message,
       });
     }
